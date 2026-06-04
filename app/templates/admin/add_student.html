@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}Add User — UEAB Cafeteria{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+  <h4 class="fw-bold mb-0">Add New User</h4>
+  <a href="{{ url_for('admin.users') }}" class="btn btn-outline-secondary btn-sm">Back to Users</a>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-body p-4">
+
+        <div class="alert alert-info small mb-4">
+          The user will be assigned the default password <strong>Ueab@2026</strong> and will be
+          required to set a strong personal password on their first login.
+        </div>
+
+        <form method="POST" action="{{ url_for('admin.add_student') }}">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Full Name</label>
+            <input type="text" name="name" class="form-control"
+                   placeholder="e.g. John Kamau" required autofocus>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Email Address</label>
+            <input type="email" name="email" class="form-control"
+                   placeholder="e.g. john.kamau@ueab.ac.ke" required>
+          </div>
+
+          {% if current_user.role == 'admin' %}
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Role</label>
+            <select name="role" id="roleSelect" class="form-select" onchange="toggleStudentId()">
+              <option value="student" selected>Student</option>
+              <option value="staff">Staff</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          {% endif %}
+
+          <div class="mb-4" id="studentIdField">
+            <label class="form-label fw-semibold">
+              Student ID <span class="text-muted fw-normal">(optional)</span>
+            </label>
+            <input type="text" name="student_id" class="form-control"
+                   placeholder="e.g. SCJKAM2310">
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100 fw-semibold py-2">
+            Add User
+          </button>
+        </form>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleStudentId() {
+  const role = document.getElementById('roleSelect').value;
+  document.getElementById('studentIdField').style.display =
+    role === 'student' ? '' : 'none';
+}
+</script>
+{% endblock %}

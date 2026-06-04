@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block title %}My Dashboard — UEAB Cafeteria{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center mt-4 mb-4">
+  <div>
+    <h4 class="fw-bold mb-1">Good day, {{ current_user.name.split()[0] }}!</h4>
+    <p class="text-muted mb-0">{{ today.strftime('%A, %d %B %Y') }}</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('student.notifications') }}" class="btn btn-outline-secondary btn-sm position-relative">
+      Notifications
+      {% if unread_count > 0 %}
+      <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">{{ unread_count }}</span>
+      {% endif %}
+    </a>
+    <a href="{{ url_for('student.download_history') }}" class="btn btn-outline-primary btn-sm">My Reports</a>
+  </div>
+</div>
+
+{% if menus %}
+<h5 class="fw-semibold mb-3">Today's Meals</h5>
+<div class="row g-3">
+  {% for menu in menus %}
+  {% set confirmed = menu.id in confirmed_ids %}
+  <div class="col-md-4" id="card-{{ menu.id }}">
+    <div class="card meal-card h-100 {% if confirmed %}confirmed{% endif %}">
+      <div class="meal-card-header meal-{{ menu.meal_type }}">
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="fw-bold text-uppercase fs-6">{{ menu.meal_type }}</span>
+          {% if confirmed %}
+          <span class="badge bg-white text-success fw-semibold">Confirmed</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="card-body">
+        {% if menu.description %}
+        <p class="text-muted small mb-3">{{ menu.description }}</p>
+        {% endif %}
+        {% if menu.items %}
+        <ul class="meal-items list-unstyled mb-3">
+          {% for item in menu.items %}
+          <li>— {{ item.name }}</li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted small fst-italic">Menu items not listed.</p>
+        {% endif %}
+        <div class="d-flex align-items-center justify-content-between mt-2">
+          <small class="text-muted">{{ menu.confirmed_count() }} confirmed</small>
+          <button class="btn btn-sm confirm-btn {% if confirmed %}btn-success{% else %}btn-outline-success{% endif %}"
+                  data-menu-id="{{ menu.id }}">
+            {% if confirmed %}Cancel{% else %}Confirm{% endif %}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="empty-state text-center py-5">
+  <p class="text-muted fs-5 mb-2">No meals scheduled for today</p>
+  <p class="text-muted small">Check back later or view the full menu.</p>
+  <a href="{{ url_for('student.view_menu') }}" class="btn btn-outline-primary mt-2">View Full Menu</a>
+</div>
+{% endif %}
+
+<div class="mt-4 text-end">
+  <a href="{{ url_for('student.view_menu') }}" class="text-primary small">View all upcoming menus</a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('.confirm-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    const menuId = this.dataset.menuId;
+    const card = document.getElementById('card-' + menuId);
+    const originalText = this.textContent;
+    this.disabled = true;
+    this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>';
+    fetch(`/student/confirm/${menuId}`, { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        if (data.status === 'error') {
+          showToast(data.message, 'danger');
+          this.disabled = false;
+          this.textContent = originalText;
+          return;
+        }
+        const confirmed = data.status === 'confirmed';
+        this.className = 'btn btn-sm confirm-btn ' + (confirmed ? 'btn-success' : 'btn-outline-success');
+        this.textContent = confirmed ? 'Cancel' : 'Confirm';
+        this.disabled = false;
+        card.querySelector('.meal-card').classList.toggle('confirmed', confirmed);
+        const header = card.querySelector('.meal-card-header > div');
+        const badge = header.querySelector('.badge');
+        if (confirmed && !badge) {
+          const b = document.createElement('span');
+          b.className = 'badge bg-white text-success fw-semibold';
+          b.textContent = 'Confirmed';
+          header.appendChild(b);
+        } else if (!confirmed && badge) { badge.remove(); }
+        showToast(data.message, confirmed ? 'success' : 'info');
+      })
+      .catch(() => { this.disabled = false; this.textContent = originalText; });
+  });
+});
+</script>
+{% endblock %}

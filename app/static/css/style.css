@@ -1,0 +1,278 @@
+/* ===========================
+   UEAB Cafeteria System CSS
+   =========================== */
+
+:root {
+  --primary:    #1a6e3c;
+  --primary-dk: #145530;
+  --primary-lt: #e8f5ee;
+  --success:    #10b981;
+  --danger:     #ef4444;
+  --info:       #3b82f6;
+  --warning:    #f59e0b;
+  --text:       #1e293b;
+  --muted:      #64748b;
+  --border:     #e2e8f0;
+  --bg:         #f1f5f9;
+  --radius:     12px;
+  --shadow:     0 2px 12px rgba(0,0,0,0.08);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main { flex: 1; }
+
+/* ---- Navbar ---- */
+#mainNav {
+  background: var(--primary) !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  padding: 0.6rem 0;
+}
+
+#mainNav .nav-link {
+  color: rgba(255,255,255,0.85) !important;
+  padding: 0.4rem 0.9rem;
+  border-radius: 8px;
+  transition: background 0.2s, color 0.2s;
+  font-size: 0.9rem;
+}
+
+#mainNav .nav-link:hover,
+#mainNav .nav-link.active {
+  background: rgba(255,255,255,0.15);
+  color: #fff !important;
+}
+
+/* ---- Main content area ---- */
+.main-content {
+  padding: 0 0 3rem;
+}
+
+/* ---- Auth pages ---- */
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dk) 100%);
+  padding: 2rem 1rem;
+}
+
+.auth-wrapper {
+  width: 100%;
+  max-width: 430px;
+  margin: 3rem auto;
+}
+
+.auth-card {
+  border: none;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.auth-header {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dk));
+  color: white;
+  padding: 2rem 1.5rem 1.5rem;
+}
+
+/* ---- Avatar ---- */
+.avatar-sm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* ---- Role badge ---- */
+.role-badge { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.5px; }
+.role-student { background: var(--info) !important; }
+.role-staff   { background: var(--success) !important; }
+.role-admin   { background: var(--danger) !important; }
+
+/* ---- Meal cards ---- */
+.meal-card {
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  overflow: hidden;
+}
+
+.meal-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+.meal-card.confirmed {
+  border-color: var(--success);
+  background: #f0fdf4;
+}
+
+.meal-card-header {
+  padding: 0.75rem 1rem;
+  color: white;
+  font-size: 0.9rem;
+}
+
+.meal-breakfast { background: linear-gradient(135deg, #f59e0b, #d97706); }
+.meal-lunch     { background: linear-gradient(135deg, #10b981, #059669); }
+.meal-dinner    { background: linear-gradient(135deg, #6366f1, #4f46e5); }
+
+.meal-items li {
+  padding: 0.2rem 0;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+/* ---- Meal type badges (tables) ---- */
+.meal-badge-breakfast { background: #fef3c7; color: #92400e; }
+.meal-badge-lunch     { background: #d1fae5; color: #065f46; }
+.meal-badge-dinner    { background: #ede9fe; color: #4c1d95; }
+
+/* ---- Stat cards ---- */
+.stat-card {
+  border-radius: var(--radius);
+}
+
+/* ---- Action cards (admin quick actions) ---- */
+.action-card {
+  border-radius: var(--radius);
+  border: 2px solid var(--border);
+  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+  color: var(--text) !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+}
+
+.action-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow);
+  background: var(--primary-lt);
+  text-decoration: none;
+}
+
+/* ---- Staff meal cards ---- */
+.staff-meal-card { border-radius: var(--radius); border: none; }
+
+/* ---- Date group label (menu page) ---- */
+.date-label {
+  background: var(--primary-lt);
+  color: var(--primary);
+  padding: 0.4rem 1rem;
+  border-radius: 8px;
+  display: inline-block;
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* ---- Notifications ---- */
+.notif-item {
+  border-left: 3px solid var(--primary);
+  transition: background 0.15s;
+}
+
+/* ---- Dinner colour (indigo) ---- */
+.text-indigo { color: #6366f1; }
+
+/* ---- Past meal card ---- */
+.meal-card.past-meal {
+  opacity: 0.7;
+  background: #f8fafc;
+}
+
+/* ---- Empty state ---- */
+.empty-state { color: var(--muted); }
+
+/* ---- Tables ---- */
+.table th {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+}
+
+/* ---- Role select in users table ---- */
+.role-select {
+  min-width: 90px;
+  font-size: 0.8rem;
+  padding: 0.2rem 0.5rem;
+}
+
+/* ---- Toast ---- */
+#toastContainer {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.custom-toast {
+  min-width: 240px;
+  padding: 0.75rem 1.25rem;
+  border-radius: 10px;
+  color: white;
+  font-size: 0.9rem;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  animation: slideIn 0.3s ease;
+}
+
+.toast-success { background: var(--success); }
+.toast-info    { background: var(--info); }
+.toast-danger  { background: var(--danger); }
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+/* ---- Footer ---- */
+.site-footer {
+  background: var(--primary);
+  color: rgba(255,255,255,0.75);
+  padding: 0.9rem 0;
+  font-size: 0.82rem;
+  margin-top: auto;
+}
+
+.site-footer .fw-semibold { color: #fff; }
+
+/* ---- User search input ---- */
+#userSearch { max-width: 420px; }
+
+/* ---- Strength bar label ---- */
+#strengthLabel { font-size: 0.75rem; }
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+  #userSearch { max-width: 100%; }
+}
+
+@media (max-width: 576px) {
+  .stat-card .card-body { padding: 0.75rem; }
+  .meal-card-header { padding: 0.6rem 0.75rem; }
+  .action-card { padding: 0.75rem !important; }
+}

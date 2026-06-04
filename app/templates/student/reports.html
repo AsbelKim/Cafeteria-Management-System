@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %}My Reports — UEAB Cafeteria{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+  <div>
+    <h4 class="fw-bold mb-1">My Attendance Report</h4>
+    <p class="text-muted mb-0">{{ current_user.name }} — {{ current_user.student_id or current_user.email }}</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('student.download_history_csv') }}" class="btn btn-primary btn-sm">
+      Download CSV
+    </a>
+    <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-secondary btn-sm">Back</a>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="stat-card card shadow-sm border-0 text-center p-3">
+      <div class="fw-bold fs-2 text-primary">{{ total }}</div>
+      <div class="text-muted small">Total Confirmed</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card card shadow-sm border-0 text-center p-3">
+      {% set breakfasts = records | selectattr('meal_type', 'equalto', 'breakfast') | list | length %}
+      <div class="fw-bold fs-2 text-warning">{{ breakfasts }}</div>
+      <div class="text-muted small">Breakfasts</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card card shadow-sm border-0 text-center p-3">
+      {% set lunches = records | selectattr('meal_type', 'equalto', 'lunch') | list | length %}
+      <div class="fw-bold fs-2 text-success">{{ lunches }}</div>
+      <div class="text-muted small">Lunches</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card card shadow-sm border-0 text-center p-3">
+      {% set dinners = records | selectattr('meal_type', 'equalto', 'dinner') | list | length %}
+      <div class="fw-bold fs-2 text-indigo">{{ dinners }}</div>
+      <div class="text-muted small">Dinners</div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span class="fw-semibold">Attendance History</span>
+    <small class="text-muted">{{ total }} records</small>
+  </div>
+  <div class="card-body p-0">
+    {% if records %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>#</th>
+            <th>Date</th>
+            <th>Meal Type</th>
+            <th>Confirmed At</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in records %}
+          <tr>
+            <td class="text-muted">{{ loop.index }}</td>
+            <td class="fw-semibold">{{ r.date.strftime('%d %b %Y') }}</td>
+            <td>
+              <span class="badge meal-badge-{{ r.meal_type }}">{{ r.meal_type | capitalize }}</span>
+            </td>
+            <td class="text-muted small">{{ r.confirmed_at.strftime('%d %b %Y, %H:%M') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center text-muted py-5">
+      <p class="fs-5">No attendance records yet</p>
+      <p class="small">Confirm meals from your dashboard to see them here.</p>
+      <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-primary btn-sm">Go to Dashboard</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

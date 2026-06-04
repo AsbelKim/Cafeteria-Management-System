@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% block title %}Attendance Detail — UEAB Cafeteria{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+  <div>
+    <h4 class="fw-bold mb-1">{{ menu.meal_type | capitalize }} — Attendees</h4>
+    <p class="text-muted mb-0">{{ menu.date.strftime('%A, %d %B %Y') }}</p>
+  </div>
+  <a href="{{ url_for('staff.dashboard') }}" class="btn btn-outline-secondary btn-sm">Back</a>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-sm-4">
+    <div class="stat-card card shadow-sm border-0 text-center p-3">
+      <div class="fw-bold fs-2 text-primary">{{ data | length }}</div>
+      <div class="text-muted small">Confirmed</div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="stat-card card shadow-sm border-0 text-center p-3">
+      <div class="fw-bold fs-2 text-success">{{ attended_count }}</div>
+      <div class="text-muted small">Attended</div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="stat-card card shadow-sm border-0 text-center p-3">
+      <div class="fw-bold fs-2 text-warning">~{{ (data | length * 1.05) | int }}</div>
+      <div class="text-muted small">Suggested Portions</div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span class="fw-semibold">Student List</span>
+    <small class="text-muted">Click "Mark Attended" as students arrive</small>
+  </div>
+  <div class="card-body p-0">
+    {% if data %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Student ID</th>
+            <th>Email</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for confirmation, s in data %}
+          <tr id="row-{{ confirmation.id }}">
+            <td class="text-muted">{{ loop.index }}</td>
+            <td>
+              <span class="avatar-sm me-2">{{ s.name[0].upper() }}</span>
+              {{ s.name }}
+            </td>
+            <td>{{ s.student_id or '—' }}</td>
+            <td class="text-muted small">{{ s.email }}</td>
+            <td>
+              <span class="badge {% if confirmation.attended %}bg-success{% else %}bg-secondary{% endif %}"
+                    id="badge-{{ confirmation.id }}">
+                {{ 'Attended' if confirmation.attended else 'Pending' }}
+              </span>
+            </td>
+            <td>
+              <form method="POST"
+                    action="{{ url_for('staff.mark_attended', confirmation_id=confirmation.id) }}">
+                <button type="submit"
+                        class="btn btn-sm {% if confirmation.attended %}btn-outline-secondary{% else %}btn-outline-success{% endif %}">
+                  <i class="fas {% if confirmation.attended %}fa-times{% else %}fa-check{% endif %} me-1"></i>
+                  {{ 'Unmark' if confirmation.attended else 'Mark Attended' }}
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-4 text-muted">
+      <p>No students have confirmed attendance for this meal.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

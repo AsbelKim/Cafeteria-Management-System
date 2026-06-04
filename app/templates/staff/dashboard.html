@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block title %}Staff Dashboard — UEAB Cafeteria{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+  <div>
+    <h4 class="fw-bold mb-1">Staff Dashboard</h4>
+    <p class="text-muted mb-0">{{ today.strftime('%A, %d %B %Y') }}</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('reports.download_today') }}" class="btn btn-outline-primary btn-sm">
+      Download Today's List
+    </a>
+    <a href="{{ url_for('reports.index') }}" class="btn btn-outline-secondary btn-sm">Reports</a>
+  </div>
+</div>
+
+{% if meal_data %}
+<div class="row g-4">
+  {% for item in meal_data %}
+  {% set menu = item.menu %}
+  {% set count = item.confirmed %}
+  <div class="col-md-4">
+    <div class="card staff-meal-card h-100 shadow-sm">
+      <div class="meal-card-header meal-{{ menu.meal_type }}">
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="fw-bold text-uppercase">{{ menu.meal_type }}</span>
+          <span class="badge bg-white text-dark fw-semibold fs-6">{{ count }}</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="d-flex justify-content-around mb-3 text-center">
+          <div>
+            <div class="fw-bold fs-3 text-primary">{{ count }}</div>
+            <small class="text-muted">Confirmed</small>
+          </div>
+          <div>
+            <div class="fw-bold fs-3 text-success">~{{ (count * 1.05) | int }}</div>
+            <small class="text-muted">Suggested Portions</small>
+          </div>
+        </div>
+
+        {% if menu.items %}
+        <hr class="my-2">
+        <p class="fw-semibold small mb-1">Menu Items:</p>
+        <ul class="list-unstyled small text-muted mb-3">
+          {% for item_obj in menu.items %}
+          <li>— {{ item_obj.name }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+
+        <a href="{{ url_for('staff.attendance_detail', menu_id=menu.id) }}"
+           class="btn btn-sm btn-outline-primary w-100">View Attendee List</a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="empty-state text-center py-5">
+  <p class="text-muted fs-5 mb-1">No meals scheduled for today</p>
+  <p class="text-muted small">The admin has not yet added today's menu.</p>
+</div>
+{% endif %}
+{% endblock %}

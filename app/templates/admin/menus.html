@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}Manage Menus — UEAB Cafeteria{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+  <h4 class="fw-bold mb-0">Manage Menus</h4>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('reports.download_menus') }}" class="btn btn-outline-primary btn-sm">
+      Download Schedule (CSV)
+    </a>
+    <a href="{{ url_for('admin.add_menu') }}" class="btn btn-primary btn-sm">Add Menu</a>
+  </div>
+</div>
+
+{% if menus %}
+<div class="card shadow-sm">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Date</th>
+            <th>Meal</th>
+            <th>Description</th>
+            <th>Items</th>
+            <th>Confirmations</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for menu in menus %}
+          <tr>
+            <td class="fw-semibold">{{ menu.date.strftime('%d %b %Y') }}</td>
+            <td>
+              <span class="badge meal-badge-{{ menu.meal_type }}">{{ menu.meal_type | capitalize }}</span>
+            </td>
+            <td class="text-muted small">{{ menu.description or '—' }}</td>
+            <td class="small">
+              {% for item in menu.items %}
+              <span class="badge bg-light text-dark me-1">{{ item.name }}</span>
+              {% else %}—
+              {% endfor %}
+            </td>
+            <td>
+              <span class="badge bg-primary">{{ menu.confirmed_count() }}</span>
+            </td>
+            <td>
+              <div class="d-flex gap-1">
+                <a href="{{ url_for('admin.edit_menu', menu_id=menu.id) }}"
+                   class="btn btn-sm btn-outline-primary">
+                  <i class="fas fa-pen me-1"></i>Edit
+                </a>
+                <form method="POST" action="{{ url_for('admin.delete_menu', menu_id=menu.id) }}"
+                      onsubmit="return confirm('Delete this menu and all its confirmations?')">
+                  <button type="submit" class="btn btn-sm btn-outline-danger">
+                    <i class="fas fa-trash me-1"></i>Delete
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="empty-state text-center py-5">
+  <p class="text-muted fs-5">No menus yet</p>
+  <a href="{{ url_for('admin.add_menu') }}" class="btn btn-primary mt-2">Add First Menu</a>
+</div>
+{% endif %}
+{% endblock %}
