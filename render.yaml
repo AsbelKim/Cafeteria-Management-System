@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: ueab-cafeteria
+    env: python
+    region: oregon          # free tier available; Frankfurt not available on free tier
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn run:app --workers 2 --timeout 60 --bind 0.0.0.0:$PORT
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true   # Render auto-generates a secure random value
+      - key: FLASK_DEBUG
+        value: false
+      - key: MYSQL_HOST
+        sync: false           # you fill these in the Render dashboard
+      - key: MYSQL_PORT
+        sync: false
+      - key: MYSQL_USER
+        sync: false
+      - key: MYSQL_PASSWORD
+        sync: false
+      - key: MYSQL_DATABASE
+        sync: false
+      - key: MYSQL_SSL_CA
+        value: certs/ca.pem   # path to the cert committed in the repo

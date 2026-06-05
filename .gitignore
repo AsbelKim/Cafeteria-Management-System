@@ -1,6 +1,10 @@
 # Environment & secrets
 .env
 
+# Never commit private TLS keys — but DO commit the CA cert (certs/ca.pem)
+*.key
+*.p12
+
 # Python
 __pycache__/
 *.py[cod]
@@ -30,3 +34,4 @@ Thumbs.db
 # Scratch / test files
 *.txt
 !requirements.txt
+!runtime.txt
