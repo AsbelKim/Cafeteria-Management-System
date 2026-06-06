@@ -36,7 +36,7 @@ def dashboard():
 @login_required
 @staff_required
 def attendance_detail(menu_id):
-    menu = Menu.query.get_or_404(menu_id)
+    menu = db.get_or_404(Menu, menu_id)
     confirmations = AttendanceConfirmation.query.filter_by(menu_id=menu_id).all()
     data = [(c, db.session.get(User, c.user_id)) for c in confirmations]
     data = [(c, u) for c, u in data if u is not None]
@@ -49,7 +49,7 @@ def attendance_detail(menu_id):
 @login_required
 @staff_required
 def mark_attended(confirmation_id):
-    confirmation = AttendanceConfirmation.query.get_or_404(confirmation_id)
+    confirmation = db.get_or_404(AttendanceConfirmation, confirmation_id)
     confirmation.attended = not confirmation.attended
     db.session.commit()
     return redirect(request.referrer or url_for('staff.dashboard'))

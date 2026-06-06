@@ -1,13 +1,130 @@
-import csv
 import io
 from flask import render_template, redirect, url_for, flash, make_response, request
 from flask_login import login_required, current_user
 from functools import wraps
 from datetime import date, timedelta
 from sqlalchemy import func
+from openpyxl import Workbook
+from openpyxl.styles import (
+    Font, PatternFill, Alignment, Border, Side, GradientFill
+)
+from openpyxl.utils import get_column_letter
+from openpyxl.drawing.image import Image as XLImage
+from PIL import Image, ImageDraw, ImageFont
 from app import db
 from app.reports import reports
 from app.models import Menu, AttendanceConfirmation, User, MenuItem
+
+# ── Colour palette ────────────────────────────────────────────────────────────
+_HDR_BG   = '1F4E79'   # dark blue  — header fill
+_HDR_FG   = 'FFFFFF'   # white      — header text
+_ALT_BG   = 'DCE6F1'   # light blue — alternating row fill
+_BORDER   = Side(style='thin', color='B8CCE4')
+
+_HDR_FILL   = PatternFill('solid', fgColor=_HDR_BG)
+_ALT_FILL   = PatternFill('solid', fgColor=_ALT_BG)
+_HDR_FONT   = Font(name='Calibri', bold=True,  color=_HDR_FG, size=11)
+_BODY_FONT  = Font(name='Calibri', bold=False, color='000000', size=10)
+_HDR_ALIGN  = Alignment(horizontal='center', vertical='center', wrap_text=True)
+_BODY_ALIGN = Alignment(horizontal='left',   vertical='center')
+_CELL_BORDER = Border(
+    left=_BORDER, right=_BORDER, top=_BORDER, bottom=_BORDER
+)
+
+
+def _make_watermark_png():
+    """Return a BytesIO PNG: tiled diagonal 'UEAB CAFETERIA' in light gray."""
+    W, H = 1400, 1000
+
+    # Load the best available bold font; fall back gracefully
+    font = None
+    for path in [
+        'C:/Windows/Fonts/ariblk.ttf',
+        'C:/Windows/Fonts/arialbd.ttf',
+        'C:/Windows/Fonts/arial.ttf',
+        '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
+        '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf',
+    ]:
+        try:
+            font = ImageFont.truetype(path, 80)
+            break
+        except OSError:
+            continue
+    if font is None:
+        font = ImageFont.load_default()
+
+    # Draw text on a scratch layer then rotate it
+    scratch = Image.new('RGBA', (1100, 150), (255, 255, 255, 0))
+    d = ImageDraw.Draw(scratch)
+    d.text((10, 20), 'UEAB CAFETERIA', font=font, fill=(140, 140, 140, 140))
+    rotated = scratch.rotate(35, expand=True)
+    rw, rh = rotated.size
+
+    # Tile across the canvas
+    canvas = Image.new('RGBA', (W, H), (255, 255, 255, 0))
+    for y in range(-rh, H + rh, rh + 80):
+        for x in range(-rw // 2, W + rw, rw + 20):
+            canvas.paste(rotated, (x, y), rotated)
+
+    buf = io.BytesIO()
+    canvas.save(buf, format='PNG')
+    buf.seek(0)
+    return buf
+
+
+def _xlsx_response(sheet_title, headers, rows, filename):
+    """Build a styled .xlsx workbook and return it as a Flask response."""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = sheet_title
+    ws.freeze_panes = 'A2'   # keep header visible while scrolling
+
+    # ── Watermark ─────────────────────────────────────────────────────────────
+    wm = XLImage(_make_watermark_png())
+    wm.width, wm.height = 1050, 750
+    ws.add_image(wm, 'A1')
+
+    # ── Header row ────────────────────────────────────────────────────────────
+    ws.row_dimensions[1].height = 22
+    for col_idx, heading in enumerate(headers, start=1):
+        cell = ws.cell(row=1, column=col_idx, value=heading)
+        cell.font      = _HDR_FONT
+        cell.fill      = _HDR_FILL
+        cell.alignment = _HDR_ALIGN
+        cell.border    = _CELL_BORDER
+
+    # ── Data rows ─────────────────────────────────────────────────────────────
+    for row_idx, row in enumerate(rows, start=2):
+        fill = _ALT_FILL if row_idx % 2 == 0 else None
+        ws.row_dimensions[row_idx].height = 18
+        for col_idx, value in enumerate(row, start=1):
+            cell = ws.cell(row=row_idx, column=col_idx, value=value)
+            cell.font      = _BODY_FONT
+            cell.alignment = _BODY_ALIGN
+            cell.border    = _CELL_BORDER
+            if fill:
+                cell.fill = fill
+
+    # ── Auto-fit column widths ────────────────────────────────────────────────
+    for col_idx, heading in enumerate(headers, start=1):
+        col_letter = get_column_letter(col_idx)
+        max_len = len(str(heading))
+        for row in rows:
+            cell_val = str(row[col_idx - 1]) if row[col_idx - 1] is not None else ''
+            max_len = max(max_len, len(cell_val))
+        ws.column_dimensions[col_letter].width = min(max_len + 4, 50)
+
+    # ── Serialize and return ──────────────────────────────────────────────────
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+
+    response = make_response(buf.read())
+    response.headers['Content-Type'] = (
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
 
 
 def staff_or_admin(f):
@@ -28,17 +145,6 @@ def admin_required(f):
             return redirect(url_for('auth.login'))
         return f(*args, **kwargs)
     return decorated
-
-
-def _csv_response(filename, headers, rows):
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow(headers)
-    writer.writerows(rows)
-    response = make_response(output.getvalue())
-    response.headers['Content-Type'] = 'text/csv'
-    response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
-    return response
 
 
 @reports.route('/')
@@ -95,7 +201,6 @@ def index():
     )
 
 
-# ── Download: full attendance report (admin/staff) ────────────────────────────
 @reports.route('/download/attendance')
 @login_required
 @staff_or_admin
@@ -114,15 +219,17 @@ def download_attendance():
 
     headers = ['Date', 'Meal Type', 'Student Name', 'Student ID', 'Email', 'Confirmed At']
     data = [
-        [str(r.date), r.meal_type, r.name, r.student_id or '', r.email,
+        [str(r.date), r.meal_type.capitalize(), r.name,
+         r.student_id or '', r.email,
          r.confirmed_at.strftime('%Y-%m-%d %H:%M')]
         for r in rows
     ]
-    filename = f'attendance_report_{date.today()}.csv'
-    return _csv_response(filename, headers, data)
+    return _xlsx_response(
+        'Attendance Report', headers, data,
+        f'attendance_report_{date.today()}.xlsx'
+    )
 
 
-# ── Download: today's confirmed attendance (admin/staff) ──────────────────────
 @reports.route('/download/today')
 @login_required
 @staff_or_admin
@@ -142,37 +249,39 @@ def download_today():
 
     headers = ['Meal Type', 'Student Name', 'Student ID', 'Email', 'Confirmed At']
     data = [
-        [r.meal_type, r.name, r.student_id or '', r.email,
-         r.confirmed_at.strftime('%H:%M')]
+        [r.meal_type.capitalize(), r.name, r.student_id or '',
+         r.email, r.confirmed_at.strftime('%H:%M')]
         for r in rows
     ]
-    filename = f'attendance_today_{today}.csv'
-    return _csv_response(filename, headers, data)
+    return _xlsx_response(
+        "Today's Attendance", headers, data,
+        f'attendance_today_{today}.xlsx'
+    )
 
 
-# ── Download: menu schedule (admin/staff) ─────────────────────────────────────
 @reports.route('/download/menus')
 @login_required
 @staff_or_admin
 def download_menus():
     menus = Menu.query.order_by(Menu.date.desc(), Menu.meal_type).all()
 
-    headers = ['Date', 'Meal Type', 'Description', 'Items', 'Confirmations']
+    headers = ['Date', 'Meal Type', 'Description', 'Menu Items', 'Confirmations']
     data = [
         [
             str(m.date),
-            m.meal_type,
+            m.meal_type.capitalize(),
             m.description or '',
             ', '.join(i.name for i in m.items),
-            m.confirmed_count()
+            m.confirmed_count(),
         ]
         for m in menus
     ]
-    filename = f'menu_schedule_{date.today()}.csv'
-    return _csv_response(filename, headers, data)
+    return _xlsx_response(
+        'Menu Schedule', headers, data,
+        f'menu_schedule_{date.today()}.xlsx'
+    )
 
 
-# ── Download: user list (admin only) ─────────────────────────────────────────
 @reports.route('/download/users')
 @login_required
 @admin_required
@@ -181,10 +290,12 @@ def download_users():
 
     headers = ['Name', 'Email', 'Student ID', 'Role', 'Status', 'Date Joined']
     data = [
-        [u.name, u.email, u.student_id or '', u.role,
+        [u.name, u.email, u.student_id or '', u.role.capitalize(),
          'Active' if u.is_active else 'Inactive',
          u.created_at.strftime('%Y-%m-%d')]
         for u in users
     ]
-    filename = f'user_list_{date.today()}.csv'
-    return _csv_response(filename, headers, data)
+    return _xlsx_response(
+        'User List', headers, data,
+        f'user_list_{date.today()}.xlsx'
+    )

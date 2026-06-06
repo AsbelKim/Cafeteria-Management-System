@@ -35,7 +35,7 @@ def create_app():
             if current_user.role == 'admin':
                 return redirect(url_for('admin.dashboard'))
             elif current_user.role == 'staff':
-                return redirect(url_for('staff.dashboard'))
+                return redirect(url_for('admin.dashboard'))
             return redirect(url_for('student.dashboard'))
         return redirect(url_for('auth.login'))
 

@@ -1,9 +1,10 @@
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from functools import wraps
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from app import db
 from app.admin import admin
+from sqlalchemy import func
 from app.models import User, Menu, MenuItem, AttendanceConfirmation, Notification
 
 DEFAULT_PASSWORD = 'Ueab@2026'
@@ -35,7 +36,7 @@ def admin_or_staff_required(f):
 
 @admin.route('/dashboard')
 @login_required
-@admin_required
+@admin_or_staff_required
 def dashboard():
     today = date.today()
     return render_template('admin/dashboard.html',
@@ -54,7 +55,7 @@ def dashboard():
 
 @admin.route('/users')
 @login_required
-@admin_required
+@admin_or_staff_required
 def users():
     all_users = User.query.order_by(User.created_at.desc()).all()
     return render_template('admin/users.html', users=all_users)
@@ -62,9 +63,9 @@ def users():
 
 @admin.route('/users/toggle/<int:user_id>', methods=['POST'])
 @login_required
-@admin_required
+@admin_or_staff_required
 def toggle_user(user_id):
-    user = User.query.get_or_404(user_id)
+    user = db.get_or_404(User, user_id)
     if user.id == current_user.id:
         flash('Cannot deactivate your own account.', 'danger')
         return redirect(url_for('admin.users'))
@@ -76,9 +77,9 @@ def toggle_user(user_id):
 
 @admin.route('/users/role/<int:user_id>', methods=['POST'])
 @login_required
-@admin_required
+@admin_or_staff_required
 def change_role(user_id):
-    user = User.query.get_or_404(user_id)
+    user = db.get_or_404(User, user_id)
     if user.id == current_user.id:
         flash('Cannot change your own role.', 'danger')
         return redirect(url_for('admin.users'))
@@ -141,9 +142,9 @@ def add_student():
 
 @admin.route('/users/delete/<int:user_id>', methods=['POST'])
 @login_required
-@admin_required
+@admin_or_staff_required
 def delete_user(user_id):
-    user = User.query.get_or_404(user_id)
+    user = db.get_or_404(User, user_id)
     if user.id == current_user.id:
         flash('Cannot delete your own account.', 'danger')
         return redirect(url_for('admin.users'))
@@ -156,9 +157,9 @@ def delete_user(user_id):
 
 @admin.route('/users/reset-password/<int:user_id>', methods=['POST'])
 @login_required
-@admin_required
+@admin_or_staff_required
 def reset_password(user_id):
-    user = User.query.get_or_404(user_id)
+    user = db.get_or_404(User, user_id)
     if user.id == current_user.id:
         flash('Cannot reset your own password this way.', 'danger')
         return redirect(url_for('admin.users'))
@@ -175,7 +176,7 @@ def reset_password(user_id):
 
 @admin.route('/menus')
 @login_required
-@admin_required
+@admin_or_staff_required
 def menus():
     all_menus = Menu.query.order_by(Menu.date.desc(), Menu.meal_type).all()
     return render_template('admin/menus.html', menus=all_menus)
@@ -183,7 +184,7 @@ def menus():
 
 @admin.route('/menus/add', methods=['GET', 'POST'])
 @login_required
-@admin_required
+@admin_or_staff_required
 def add_menu():
     if request.method == 'POST':
         try:
@@ -217,9 +218,9 @@ def add_menu():
 
 @admin.route('/menus/edit/<int:menu_id>', methods=['GET', 'POST'])
 @login_required
-@admin_required
+@admin_or_staff_required
 def edit_menu(menu_id):
-    menu = Menu.query.get_or_404(menu_id)
+    menu = db.get_or_404(Menu, menu_id)
     if request.method == 'POST':
         try:
             menu_date = datetime.strptime(request.form.get('date', ''), '%Y-%m-%d').date()
@@ -259,9 +260,9 @@ def edit_menu(menu_id):
 
 @admin.route('/menus/delete/<int:menu_id>', methods=['POST'])
 @login_required
-@admin_required
+@admin_or_staff_required
 def delete_menu(menu_id):
-    menu = Menu.query.get_or_404(menu_id)
+    menu = db.get_or_404(Menu, menu_id)
     db.session.delete(menu)
     db.session.commit()
     flash('Menu deleted.', 'success')
@@ -270,7 +271,7 @@ def delete_menu(menu_id):
 
 @admin.route('/notify', methods=['GET', 'POST'])
 @login_required
-@admin_required
+@admin_or_staff_required
 def send_notification():
     if request.method == 'POST':
         title = request.form.get('title', '').strip()
@@ -278,7 +279,7 @@ def send_notification():
 
         if not title or not message:
             flash('Title and message are required.', 'danger')
-            return render_template('admin/notify.html')
+            return redirect(url_for('admin.send_notification'))
 
         students = User.query.filter_by(role='student', is_active=True).all()
         for user in students:
@@ -286,6 +287,90 @@ def send_notification():
         db.session.commit()
 
         flash(f'Notification sent to {len(students)} student(s).', 'success')
-        return redirect(url_for('admin.dashboard'))
+        return redirect(url_for('admin.send_notification'))
 
-    return render_template('admin/notify.html')
+    recent = (
+        db.session.query(
+            Notification.title,
+            Notification.message,
+            func.max(Notification.created_at).label('sent_at'),
+            func.count(Notification.id).label('recipients'),
+        )
+        .group_by(Notification.title, Notification.message)
+        .order_by(func.max(Notification.created_at).desc())
+        .limit(5)
+        .all()
+    )
+    return render_template('admin/notify.html', recent=recent)
+
+
+@admin.route('/students')
+@login_required
+@admin_or_staff_required
+def students():
+    all_students = User.query.filter_by(role='student').order_by(User.name).all()
+    return render_template('admin/students.html', students=all_students)
+
+
+@admin.route('/menus/weekly', methods=['GET', 'POST'])
+@login_required
+@admin_or_staff_required
+def weekly_menu():
+    week_start_str = request.args.get('week_start')
+    try:
+        week_start = datetime.strptime(week_start_str, '%Y-%m-%d').date()
+    except (ValueError, TypeError):
+        today = date.today()
+        week_start = today - timedelta(days=today.weekday())
+
+    week_dates = [week_start + timedelta(days=i) for i in range(7)]
+    meal_types = ['breakfast', 'lunch', 'dinner']
+
+    if request.method == 'POST':
+        created = 0
+        skipped = 0
+        for d in week_dates:
+            for meal in meal_types:
+                key = f"{d.isoformat()}_{meal}"
+                description = request.form.get(f'desc_{key}', '').strip()
+                items_raw = request.form.get(f'items_{key}', '').strip()
+
+                if not description and not items_raw:
+                    continue
+
+                if Menu.query.filter_by(date=d, meal_type=meal).first():
+                    skipped += 1
+                    continue
+
+                menu = Menu(date=d, meal_type=meal, description=description)
+                db.session.add(menu)
+                db.session.flush()
+
+                for item_name in items_raw.split(','):
+                    item_name = item_name.strip()
+                    if item_name:
+                        db.session.add(MenuItem(menu_id=menu.id, name=item_name))
+                created += 1
+
+        db.session.commit()
+        msg = f'{created} menu(s) created.'
+        if skipped:
+            msg += f' {skipped} slot(s) skipped (already exist).'
+        flash(msg, 'success' if created else 'warning')
+        return redirect(url_for('admin.weekly_menu', week_start=week_start.isoformat()))
+
+    existing_menus = {
+        (m.date, m.meal_type): m
+        for m in Menu.query.filter(Menu.date.in_(week_dates)).all()
+    }
+    prev_week = week_start - timedelta(days=7)
+    next_week = week_start + timedelta(days=7)
+
+    return render_template('admin/weekly_menu.html',
+        week_dates=week_dates,
+        meal_types=meal_types,
+        existing_menus=existing_menus,
+        week_start=week_start,
+        prev_week=prev_week,
+        next_week=next_week,
+    )

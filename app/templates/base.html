@@ -46,12 +46,32 @@
 
         {% elif current_user.role == 'staff' %}
         <li class="nav-item">
-          <a class="nav-link {% if request.endpoint == 'staff.dashboard' %}active{% endif %}"
-             href="{{ url_for('staff.dashboard') }}">Home</a>
+          <a class="nav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}"
+             href="{{ url_for('admin.dashboard') }}">Home</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'admin.students' %}active{% endif %}"
+             href="{{ url_for('admin.students') }}">Students</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'admin.users' %}active{% endif %}"
+             href="{{ url_for('admin.users') }}">Users</a>
         </li>
         <li class="nav-item">
           <a class="nav-link {% if request.endpoint == 'admin.add_student' %}active{% endif %}"
              href="{{ url_for('admin.add_student') }}">Add User</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint in ('admin.menus', 'admin.add_menu', 'admin.edit_menu', 'admin.weekly_menu') %}active{% endif %}"
+             href="{{ url_for('admin.menus') }}">Menus</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'admin.weekly_menu' %}active{% endif %}"
+             href="{{ url_for('admin.weekly_menu') }}">Weekly Planner</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'admin.send_notification' %}active{% endif %}"
+             href="{{ url_for('admin.send_notification') }}">Notify</a>
         </li>
         <li class="nav-item">
           <a class="nav-link {% if request.endpoint == 'reports.index' %}active{% endif %}"
@@ -64,6 +84,10 @@
              href="{{ url_for('admin.dashboard') }}">Home</a>
         </li>
         <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'admin.students' %}active{% endif %}"
+             href="{{ url_for('admin.students') }}">Students</a>
+        </li>
+        <li class="nav-item">
           <a class="nav-link {% if request.endpoint == 'admin.users' %}active{% endif %}"
              href="{{ url_for('admin.users') }}">Users</a>
         </li>
@@ -72,8 +96,12 @@
              href="{{ url_for('admin.add_student') }}">Add User</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link {% if request.endpoint in ('admin.menus', 'admin.add_menu', 'admin.edit_menu') %}active{% endif %}"
+          <a class="nav-link {% if request.endpoint in ('admin.menus', 'admin.add_menu', 'admin.edit_menu', 'admin.weekly_menu') %}active{% endif %}"
              href="{{ url_for('admin.menus') }}">Menus</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'admin.weekly_menu' %}active{% endif %}"
+             href="{{ url_for('admin.weekly_menu') }}">Weekly Planner</a>
         </li>
         <li class="nav-item">
           <a class="nav-link {% if request.endpoint == 'admin.send_notification' %}active{% endif %}"
@@ -135,8 +163,6 @@
 <footer class="site-footer">
   <div class="container text-center">
     <span class="fw-semibold">UEAB Cafeteria Attendance &amp; Meal Management System</span>
-    <span class="mx-2 text-white-50">&mdash;</span>
-    <span>INSY 492 Senior Project &bull; University of Eastern Africa, Baraton</span>
   </div>
 </footer>
 

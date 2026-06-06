@@ -53,7 +53,7 @@ def view_menu():
 @login_required
 @student_required
 def confirm_attendance(menu_id):
-    menu = Menu.query.get_or_404(menu_id)
+    menu = db.get_or_404(Menu, menu_id)
     if menu.date < date.today():
         return jsonify({'status': 'error', 'message': 'Cannot change confirmation for past meals.'})
     existing = AttendanceConfirmation.query.filter_by(
