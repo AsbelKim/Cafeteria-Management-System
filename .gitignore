@@ -31,6 +31,9 @@ env/
 .DS_Store
 Thumbs.db
 
+# Netlify build output
+public/
+
 # Scratch / test files
 *.txt
 !requirements.txt
