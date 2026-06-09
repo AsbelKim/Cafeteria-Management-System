@@ -24,10 +24,8 @@ def _validate_password(password):
 
 
 def _dashboard_for(user):
-    if user.role == 'admin':
+    if user.role in ('admin', 'staff'):
         return url_for('admin.dashboard')
-    elif user.role == 'staff':
-        return url_for('staff.dashboard')
     return url_for('student.dashboard')
 
 

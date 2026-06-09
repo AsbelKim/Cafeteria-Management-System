@@ -4,7 +4,7 @@
 {% block content %}
 <div class="page-header d-flex justify-content-between align-items-center mt-4 mb-4">
   <div>
-    <h4 class="fw-bold mb-1">Good day, {{ current_user.name.split()[0] }}!</h4>
+    <h4 class="fw-bold mb-1" id="greeting">Good day, {{ current_user.name.split()[0] }}!</h4>
     <p class="text-muted mb-0">{{ today.strftime('%A, %d %B %Y') }}</p>
   </div>
   <div class="d-flex gap-2">
@@ -73,6 +73,14 @@
 {% endblock %}
 
 {% block scripts %}
+<script>
+(function () {
+  const name = {{ current_user.name.split()[0] | tojson }};
+  const h = new Date().getHours();
+  const greet = h < 12 ? 'Good Morning' : h < 17 ? 'Good Afternoon' : h < 21 ? 'Good Evening' : 'Good Night';
+  document.getElementById('greeting').textContent = greet + ', ' + name + '!';
+})();
+</script>
 <script>
 document.querySelectorAll('.confirm-btn').forEach(btn => {
   btn.addEventListener('click', function() {
