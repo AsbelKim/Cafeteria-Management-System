@@ -38,3 +38,13 @@ public/
 *.txt
 !requirements.txt
 !runtime.txt
+
+# Logs
+*.log
+
+# Personal / sensitive files
+ID BACK.jpeg
+ID FRONT.jpeg
+
+# Claude Code internal files
+.claude/

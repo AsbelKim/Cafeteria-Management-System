@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Portal — UEAB Cafeteria</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --green:    #1a6e3c;
+      --green-dk: #145530;
+      --green-lt: #e8f5ee;
+      --bg:       #f1f5f9;
+      --border:   #e2e8f0;
+      --text:     #1e293b;
+      --muted:    #64748b;
+      --radius:   12px;
+      --shadow:   0 2px 12px rgba(0,0,0,0.08);
+      --sidebar:  240px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; min-height: 100vh; }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      width: var(--sidebar);
+      background: var(--green-dk);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 100;
+    }
+    .sb-brand {
+      padding: 1.25rem 1rem;
+      color: white;
+      font-weight: 700;
+      font-size: 1rem;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      display: flex; align-items: center; gap: 0.6rem;
+    }
+    .sb-brand i { font-size: 1.2rem; }
+    .sb-section { padding: 0.75rem 1rem 0.25rem; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.8px; color: rgba(255,255,255,0.4); }
+    .sb-nav { padding: 0.25rem 0.6rem; list-style: none; }
+    .sb-nav li a {
+      display: flex; align-items: center; gap: 0.7rem;
+      padding: 0.55rem 0.8rem;
+      color: rgba(255,255,255,0.75);
+      text-decoration: none;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      transition: background 0.15s, color 0.15s;
+      cursor: pointer;
+    }
+    .sb-nav li a:hover, .sb-nav li a.active {
+      background: rgba(255,255,255,0.12);
+      color: white;
+    }
+    .sb-nav li a i { width: 18px; text-align: center; font-size: 0.9rem; }
+    .sb-footer {
+      margin-top: auto;
+      padding: 1rem;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    .user-chip {
+      display: flex; align-items: center; gap: 0.6rem;
+      color: rgba(255,255,255,0.8);
+      font-size: 0.8rem;
+    }
+    .user-chip .av {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.8rem; color: white; flex-shrink: 0;
+    }
+    .user-chip .name { font-weight: 600; line-height: 1.2; color: white; }
+    .user-chip .role { font-size: 0.65rem; opacity: 0.65; }
+    .back-link { display: block; text-align: center; padding: 0.5rem; font-size: 0.75rem; color: rgba(255,255,255,0.5); text-decoration: none; margin-top: 0.5rem; }
+    .back-link:hover { color: white; }
+
+    /* ── Main ── */
+    #main { margin-left: var(--sidebar); flex: 1; display: flex; flex-direction: column; }
+    .topbar {
+      background: white;
+      border-bottom: 1px solid var(--border);
+      padding: 0.85rem 1.75rem;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .topbar h5 { font-weight: 700; font-size: 1rem; margin: 0; }
+    .topbar .date-txt { font-size: 0.82rem; color: var(--muted); }
+    .content { padding: 1.75rem; }
+
+    /* ── Sections ── */
+    .section { display: none; }
+    .section.active { display: block; }
+
+    /* ── Stats ── */
+    .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .stat-card {
+      background: white; border-radius: var(--radius); padding: 1.25rem;
+      box-shadow: var(--shadow); text-align: center;
+    }
+    .stat-num { font-size: 2rem; font-weight: 800; line-height: 1; }
+    .stat-lbl { font-size: 0.78rem; color: var(--muted); margin-top: 0.3rem; }
+
+    /* ── Quick actions ── */
+    .actions-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .action-card {
+      background: white; border-radius: var(--radius); padding: 1.2rem;
+      box-shadow: var(--shadow); text-align: center; cursor: pointer;
+      border: 2px solid var(--border);
+      transition: border-color 0.2s, transform 0.2s, background 0.2s;
+    }
+    .action-card:hover { border-color: var(--green); transform: translateY(-3px); background: var(--green-lt); }
+    .action-card i { font-size: 1.4rem; margin-bottom: 0.5rem; display: block; }
+    .action-card .ac-title { font-weight: 600; font-size: 0.88rem; }
+    .action-card .ac-sub { font-size: 0.74rem; color: var(--muted); margin-top: 0.15rem; }
+
+    /* ── Cards ── */
+    .panel { background: white; border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 1.5rem; }
+    .panel-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .panel-header h6 { font-weight: 700; margin: 0; font-size: 0.95rem; }
+    .panel-body { padding: 1.25rem; }
+
+    /* ── Tables ── */
+    table { width: 100%; border-collapse: collapse; }
+    thead th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); background: #f8fafc; text-align: left; }
+    tbody td { padding: 0.75rem; font-size: 0.88rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #fafcff; }
+
+    /* ── Badges ── */
+    .role-badge { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.4px; padding: 0.2rem 0.6rem; border-radius: 999px; font-weight: 600; }
+    .role-admin   { background: #fee2e2; color: #991b1b; }
+    .role-staff   { background: #d1fae5; color: #065f46; }
+    .role-student { background: #dbeafe; color: #1e40af; }
+    .status-active   { background: #d1fae5; color: #065f46; font-size: 0.72rem; padding: 0.2rem 0.6rem; border-radius: 999px; font-weight: 600; }
+    .status-inactive { background: #fee2e2; color: #991b1b; font-size: 0.72rem; padding: 0.2rem 0.6rem; border-radius: 999px; font-weight: 600; }
+    .meal-badge { font-size: 0.72rem; padding: 0.2rem 0.55rem; border-radius: 999px; font-weight: 600; }
+    .meal-breakfast { background: #fef3c7; color: #92400e; }
+    .meal-lunch     { background: #d1fae5; color: #065f46; }
+    .meal-dinner    { background: #ede9fe; color: #4c1d95; }
+
+    /* ── Action buttons ── */
+    .btn-xs { padding: 0.25rem 0.6rem; font-size: 0.75rem; border-radius: 6px; border: none; cursor: pointer; font-weight: 500; }
+    .btn-edit    { background: #eff6ff; color: #1d4ed8; }
+    .btn-delete  { background: #fef2f2; color: #dc2626; }
+    .btn-reset   { background: #fefce8; color: #a16207; }
+    .btn-toggle  { background: #f0fdf4; color: #15803d; }
+    .btn-green   { background: var(--green); color: white; padding: 0.5rem 1.25rem; font-size: 0.85rem; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; }
+    .btn-green:hover { background: var(--green-dk); }
+    .btn-outline-green { background: white; color: var(--green); border: 1.5px solid var(--green); padding: 0.45rem 1rem; font-size: 0.82rem; border-radius: 8px; cursor: pointer; font-weight: 600; }
+
+    /* ── Forms ── */
+    .form-label { font-size: 0.82rem; font-weight: 600; color: var(--text); margin-bottom: 0.3rem; }
+    .form-control, .form-select {
+      border: 1.5px solid var(--border); border-radius: 8px;
+      padding: 0.55rem 0.85rem; font-size: 0.88rem; width: 100%;
+      background: white; color: var(--text);
+      transition: border-color 0.15s;
+    }
+    .form-control:focus, .form-select:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 3px rgba(26,110,60,0.1); }
+    .form-row { display: grid; gap: 1rem; margin-bottom: 1rem; }
+    .col-2 { grid-template-columns: 1fr 1fr; }
+    .col-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+    /* ── Weekly planner ── */
+    .week-grid { display: grid; grid-template-columns: 90px repeat(7,1fr); gap: 0; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .wg-cell { padding: 0.6rem 0.5rem; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); font-size: 0.78rem; }
+    .wg-cell:last-child { border-right: none; }
+    .wg-header { background: var(--green); color: white; font-weight: 700; text-align: center; font-size: 0.8rem; }
+    .wg-meal-lbl { background: #f8fafc; font-weight: 600; color: var(--muted); font-size: 0.75rem; display: flex; align-items: center; justify-content: center; }
+    .wg-filled { background: #f0fdf4; }
+    .wg-empty  { background: white; color: var(--muted); font-style: italic; font-size: 0.72rem; display: flex; align-items: center; justify-content: center; min-height: 52px; }
+    .wg-food { font-size: 0.72rem; color: var(--text); }
+    .wg-food .menu-name { font-weight: 600; color: var(--green); font-size: 0.75rem; margin-bottom: 0.2rem; }
+
+    /* ── Notification history ── */
+    .notif-row { padding: 0.85rem 1rem; border-bottom: 1px solid #f1f5f9; border-left: 3px solid var(--green); margin-bottom: 0.5rem; border-radius: 0 8px 8px 0; background: white; }
+    .notif-row .notif-title { font-weight: 600; font-size: 0.88rem; }
+    .notif-row .notif-meta  { font-size: 0.75rem; color: var(--muted); margin-top: 0.2rem; }
+
+    /* ── Chart ── */
+    .chart-wrap { position: relative; height: 240px; }
+
+    /* ── Report download cards ── */
+    .dl-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 1rem; }
+    .dl-card {
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+      padding: 1rem 1.1rem;
+      display: flex; align-items: center; gap: 0.9rem;
+      cursor: pointer; transition: border-color 0.2s, background 0.2s;
+    }
+    .dl-card:hover { border-color: var(--green); background: var(--green-lt); }
+    .dl-card .dl-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
+    .dl-card .dl-title { font-weight: 600; font-size: 0.88rem; }
+    .dl-card .dl-sub   { font-size: 0.74rem; color: var(--muted); }
+
+    /* ── Avatar ── */
+    .av { width: 32px; height: 32px; border-radius: 50%; background: var(--green); color: white; font-size: 0.78rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+    /* ── Topbar breadcrumb ── */
+    .breadcrumb-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.78rem; color: var(--muted); margin-bottom: 1.25rem; }
+    .breadcrumb-row span { color: var(--text); font-weight: 600; }
+
+    /* ── Footer ── */
+    footer { background: var(--green); color: rgba(255,255,255,0.75); text-align: center; padding: 0.8rem; font-size: 0.78rem; margin-top: auto; }
+    footer strong { color: white; }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div class="sb-brand">
+    <i class="fas fa-utensils"></i>
+    UEAB Cafeteria
+  </div>
+
+  <div class="sb-section">Main</div>
+  <ul class="sb-nav">
+    <li><a onclick="show('dashboard')" class="active" id="nav-dashboard"><i class="fas fa-th-large"></i> Dashboard</a></li>
+  </ul>
+
+  <div class="sb-section">People</div>
+  <ul class="sb-nav">
+    <li><a onclick="show('users')"    id="nav-users"><i class="fas fa-users"></i> Users</a></li>
+    <li><a onclick="show('students')" id="nav-students"><i class="fas fa-user-graduate"></i> Students</a></li>
+    <li><a onclick="show('adduser')"  id="nav-adduser"><i class="fas fa-user-plus"></i> Add User</a></li>
+  </ul>
+
+  <div class="sb-section">Meals</div>
+  <ul class="sb-nav">
+    <li><a onclick="show('menus')"   id="nav-menus"><i class="fas fa-list-alt"></i> Menus</a></li>
+    <li><a onclick="show('weekly')"  id="nav-weekly"><i class="fas fa-calendar-week"></i> Weekly Planner</a></li>
+    <li><a onclick="show('addmenu')" id="nav-addmenu"><i class="fas fa-plus-circle"></i> Add Menu</a></li>
+  </ul>
+
+  <div class="sb-section">Communication</div>
+  <ul class="sb-nav">
+    <li><a onclick="show('notify')" id="nav-notify"><i class="fas fa-bell"></i> Notifications</a></li>
+  </ul>
+
+  <div class="sb-section">Analytics</div>
+  <ul class="sb-nav">
+    <li><a onclick="show('reports')" id="nav-reports"><i class="fas fa-chart-bar"></i> Reports</a></li>
+  </ul>
+
+  <div class="sb-footer">
+    <div class="user-chip">
+      <div class="av">S</div>
+      <div>
+        <div class="name">System Admin</div>
+        <div class="role">Administrator</div>
+      </div>
+    </div>
+    <a href="index.html" class="back-link"><i class="fas fa-arrow-left me-1"></i> Back to Overview</a>
+  </div>
+</nav>
+
+<!-- MAIN CONTENT -->
+<div id="main">
+  <div class="topbar">
+    <div>
+      <h5 id="page-title">Admin Dashboard</h5>
+      <div class="date-txt">Monday, 09 June 2026</div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <span class="role-badge role-admin">Admin</span>
+      <div class="av">S</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══════════════ DASHBOARD ══════════════ -->
+    <div class="section active" id="section-dashboard">
+      <div class="breadcrumb-row"><i class="fas fa-home"></i> <span>Dashboard</span></div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-num" style="color:#3b82f6">6</div>
+          <div class="stat-lbl">Total Students</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" style="color:#10b981">1</div>
+          <div class="stat-lbl">Staff Members</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" style="color:#f59e0b">1</div>
+          <div class="stat-lbl">Today's Menus</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" style="color:#6366f1">4</div>
+          <div class="stat-lbl">Today's Confirmations</div>
+        </div>
+      </div>
+
+      <h6 class="fw-bold mb-3">Quick Actions</h6>
+      <div class="actions-grid">
+        <div class="action-card" onclick="show('addmenu')">
+          <i class="fas fa-utensils" style="color:#3b82f6"></i>
+          <div class="ac-title">Add Menu</div>
+          <div class="ac-sub">Schedule a meal</div>
+        </div>
+        <div class="action-card" onclick="show('users')">
+          <i class="fas fa-users" style="color:#10b981"></i>
+          <div class="ac-title">Manage Users</div>
+          <div class="ac-sub">Roles &amp; access</div>
+        </div>
+        <div class="action-card" onclick="show('adduser')">
+          <i class="fas fa-user-plus" style="color:#6366f1"></i>
+          <div class="ac-title">Add User</div>
+          <div class="ac-sub">Create account</div>
+        </div>
+        <div class="action-card" onclick="show('notify')">
+          <i class="fas fa-bell" style="color:#f59e0b"></i>
+          <div class="ac-title">Send Notification</div>
+          <div class="ac-sub">Alert all students</div>
+        </div>
+        <div class="action-card" onclick="show('reports')">
+          <i class="fas fa-chart-bar" style="color:#ef4444"></i>
+          <div class="ac-title">View Reports</div>
+          <div class="ac-sub">Charts &amp; downloads</div>
+        </div>
+        <div class="action-card" onclick="show('menus')">
+          <i class="fas fa-list-alt" style="color:#64748b"></i>
+          <div class="ac-title">Manage Menus</div>
+          <div class="ac-sub">Edit &amp; delete</div>
+        </div>
+        <div class="action-card" onclick="show('students')">
+          <i class="fas fa-user-graduate" style="color:#3b82f6"></i>
+          <div class="ac-title">Student List</div>
+          <div class="ac-sub">View &amp; manage</div>
+        </div>
+        <div class="action-card" onclick="show('weekly')">
+          <i class="fas fa-calendar-week" style="color:#10b981"></i>
+          <div class="ac-title">Weekly Planner</div>
+          <div class="ac-sub">Plan the whole week</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ USERS ══════════════ -->
+    <div class="section" id="section-users">
+      <div class="breadcrumb-row"><i class="fas fa-home"></i> › <span>User Management</span></div>
+      <div class="panel">
+        <div class="panel-header">
+          <h6><i class="fas fa-users me-2 text-success"></i>All Users</h6>
+          <button class="btn-green" onclick="show('adduser')"><i class="fas fa-plus me-1"></i> Add User</button>
+        </div>
+        <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th><th>Email</th><th>Student ID</th><th>Role</th><th>Status</th><th>Joined</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div class="d-flex align-items-center gap-2"><div class="av" style="background:#ef4444">S</div> System Admin</div></td>
+              <td>admin@ueab.ac.ke</td>
+              <td>—</td>
+              <td><span class="role-badge role-admin">Admin</span></td>
+              <td><span class="status-active">Active</span></td>
+              <td>01 Jan 2026</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td><div class="d-flex align-items-center gap-2"><div class="av" style="background:#10b981">C</div> Cafeteria Staff</div></td>
+              <td>staff@ueab.ac.ke</td>
+              <td>—</td>
+              <td><span class="role-badge role-staff">Staff</span></td>
+              <td><span class="status-active">Active</span></td>
+              <td>01 Jan 2026</td>
+              <td><button class="btn-xs btn-reset">Reset PW</button></td>
+            </tr>
+            <tr>
+              <td><div class="d-flex align-items-center gap-2"><div class="av">F</div> Faith Chepchumba</div></td>
+              <td>faith.chepchumba@ueab.ac.ke</td>
+              <td>SCHEFA2312</td>
+              <td><span class="role-badge role-student">Student</span></td>
+              <td><span class="status-active">Active</span></td>
+              <td>01 Jan 2026</td>
+              <td class="d-flex gap-1">
+                <button class="btn-xs btn-toggle">Deactivate</button>
+                <button class="btn-xs btn-reset">Reset PW</button>
+                <button class="btn-xs btn-delete">Delete</button>
+              </td>
+            </tr>
+            <tr>
+              <td><div class="d-flex align-items-center gap-2"><div class="av">J</div> John Kamau</div></td>
+              <td>john.kamau@ueab.ac.ke</td>
+              <td>SCJKAM2301</td>
+              <td><span class="role-badge role-student">Student</span></td>
+              <td><span class="status-active">Active</span></td>
+              <td>01 Jan 2026</td>
+              <td class="d-flex gap-1">
+                <button class="btn-xs btn-toggle">Deactivate</button>
+                <button class="btn-xs btn-reset">Reset PW</button>
+                <button class="btn-xs btn-delete">Delete</button>
+              </td>
+            </tr>
+            <tr>
+              <td><div class="d-flex align-items-center gap-2"><div class="av">M</div> Mary Wanjiku</div></td>
+              <td>mary.wanjiku@ueab.ac.ke</td>
+              <td>SCMWAN2305</td>
+              <td><span class="role-badge role-student">Student</span></td>
+              <td><span class="status-active">Active</span></td>
+              <td>01 Jan 2026</td>
+              <td class="d-flex gap-1">
+                <button class="btn-xs btn-toggle">Deactivate</button>
+                <button class="btn-xs btn-reset">Reset PW</button>
+                <button class="btn-xs btn-delete">Delete</button>
+              </td>
+            </tr>
+            <tr>
+              <td><div class="d-flex align-items-center gap-2"><div class="av" style="background:#6366f1">T</div> Tarus Kim</div></td>
+              <td>tarus.kim@ueab.ac.ke</td>
+              <td>SCTARK2315</td>
+              <td><span class="role-badge role-student">Student</span></td>
+              <td><span class="status-active">Active</span></td>
+              <td>03 Jan 2026</td>
+              <td class="d-flex gap-1">
+                <button class="btn-xs btn-toggle">Deactivate</button>
+                <button class="btn-xs btn-reset">Reset PW</button>
+                <button class="btn-xs btn-delete">Delete</button>
+              </td>
+            </tr>
+            <tr>
+              <td><div class="d-flex align-items-center gap-2"><div class="av" style="background:#f59e0b">D</div> Delvin Odede</div></td>
+              <td>delvin.odede@ueab.ac.ke</td>
+              <td>SCDODE2318</td>
+              <td><span class="role-badge role-student">Student</span></td>
+              <td><span class="status-inactive">Inactive</span></td>
+              <td>05 Jan 2026</td>
+              <td class="d-flex gap-1">
+                <button class="btn-xs btn-toggle">Activate</button>
+                <button class="btn-xs btn-reset">Reset PW</button>
+                <button class="btn-xs btn-delete">Delete</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ STUDENTS ══════════════ -->
+    <div class="section" id="section-students">
+      <div class="breadcrumb-row"><i class="fas fa-home"></i> › <span>Student List</span></div>
+      <div class="panel">
+        <div class="panel-header">
+          <h6><i class="fas fa-user-graduate me-2 text-primary"></i>Enrolled Students</h6>
+          <button class="btn-green" onclick="show('adduser')"><i class="fas fa-plus me-1"></i> Enrol Student</button>
+        </div>
+        <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>#</th><th>Name</th><th>Student ID</th><th>Email</th><th>Status</th><th>Confirmations</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td><div class="d-flex align-items-center gap-2"><div class="av">F</div>Faith Chepchumba</div></td><td>SCHEFA2312</td><td>faith.chepchumba@ueab.ac.ke</td><td><span class="status-active">Active</span></td><td><strong>3</strong></td></tr>
+            <tr><td>2</td><td><div class="d-flex align-items-center gap-2"><div class="av">J</div>John Kamau</div></td><td>SCJKAM2301</td><td>john.kamau@ueab.ac.ke</td><td><span class="status-active">Active</span></td><td><strong>1</strong></td></tr>
+            <tr><td>3</td><td><div class="d-flex align-items-center gap-2"><div class="av">M</div>Mary Wanjiku</div></td><td>SCMWAN2305</td><td>mary.wanjiku@ueab.ac.ke</td><td><span class="status-active">Active</span></td><td><strong>3</strong></td></tr>
+            <tr><td>4</td><td><div class="d-flex align-items-center gap-2"><div class="av" style="background:#6366f1">T</div>Tarus Kim</div></td><td>SCTARK2315</td><td>tarus.kim@ueab.ac.ke</td><td><span class="status-active">Active</span></td><td><strong>3</strong></td></tr>
+            <tr><td>5</td><td><div class="d-flex align-items-center gap-2"><div class="av" style="background:#f59e0b">D</div>Delvin Odede</div></td><td>SCDODE2318</td><td>delvin.odede@ueab.ac.ke</td><td><span class="status-inactive">Inactive</span></td><td><strong>1</strong></td></tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ ADD USER ══════════════ -->
+    <div class="section" id="section-adduser">
+      <div class="breadcrumb-row"><i class="fas fa-home"></i> › Users › <span>Add User</span></div>
+      <div class="panel" style="max-width:560px">
+        <div class="panel-header"><h6><i class="fas fa-user-plus me-2 text-info"></i>Create New Account</h6></div>
+        <div class="panel-body">
+          <div class="form-row col-2">
+            <div><label class="form-label">Full Name *</label><input class="form-control" type="text" placeholder="e.g. Jane Muthoni" value=""></div>
+            <div><label class="form-label">Email Address *</label><input class="form-control" type="email" placeholder="jane@ueab.ac.ke"></div>
+          </div>
+          <div class="form-row col-2">
+            <div><label class="form-label">Student ID</label><input class="form-control" type="text" placeholder="e.g. SCJMUT2320"></div>
+            <div>
+              <label class="form-label">Role *</label>
+              <select class="form-select">
+                <option value="student" selected>Student</option>
+                <option value="staff">Staff</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+          </div>
+          <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:0.75rem 1rem;margin-bottom:1rem;font-size:0.82rem;color:#92400e">
+            <i class="fas fa-info-circle me-1"></i>
+            Default password <strong>Ueab@2026</strong> will be set. The user must change it on first login.
+          </div>
+          <button class="btn-green w-100"><i class="fas fa-plus me-2"></i>Create Account</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ MENUS ══════════════ -->
+    <div class="section" id="section-menus">
+      <div class="breadcrumb-row"><i class="fas fa-home"></i> › <span>Menu Management</span></div>
+      <div class="panel">
+        <div class="panel-header">
+          <h6><i class="fas fa-list-alt me-2 text-secondary"></i>All Menus</h6>
+          <button class="btn-green" onclick="show('addmenu')"><i class="fas fa-plus me-1"></i> Add Menu</button>
+        </div>
+        <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Date</th><th>Meal</th><th>Description</th><th>Items</th><th>Confirmations</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>09 Jun 2026</strong> <span class="badge bg-success text-white ms-1" style="font-size:0.65rem">Today</span></td>
+              <td><span class="meal-badge meal-lunch">Lunch</span></td>
+              <td>Special Lunch</td>
+              <td>Rice, Beans, Juice</td><td>4</td>
+              <td class="d-flex gap-1"><button class="btn-xs btn-edit">Edit</button><button class="btn-xs btn-delete">Delete</button></td>
+            </tr>
+            <tr>
+              <td>06 Jun 2026</td><td><span class="meal-badge meal-dinner">Dinner</span></td>
+              <td>Wednesday Dinner</td><td>Ugali, Lentil soup, Cabbage</td><td>3</td>
+              <td class="d-flex gap-1"><button class="btn-xs btn-edit">Edit</button><button class="btn-xs btn-delete">Delete</button></td>
+            </tr>
+            <tr>
+              <td>06 Jun 2026</td><td><span class="meal-badge meal-lunch">Lunch</span></td>
+              <td>Wednesday Lunch</td><td>White rice, Chicken curry, Salad</td><td>5</td>
+              <td class="d-flex gap-1"><button class="btn-xs btn-edit">Edit</button><button class="btn-xs btn-delete">Delete</button></td>
+            </tr>
+            <tr>
+              <td>06 Jun 2026</td><td><span class="meal-badge meal-breakfast">Breakfast</span></td>
+              <td>Wednesday Breakfast</td><td>Bread, Butter, Tea, Fruit</td><td>4</td>
+              <td class="d-flex gap-1"><button class="btn-xs btn-edit">Edit</button><button class="btn-xs btn-delete">Delete</button></td>
+            </tr>
+            <tr>
+              <td>05 Jun 2026</td><td><span class="meal-badge meal-dinner">Dinner</span></td>
+              <td>Tuesday Dinner</td><td>Ugali, Fish, Spinach</td><td>3</td>
+              <td class="d-flex gap-1"><button class="btn-xs btn-edit">Edit</button><button class="btn-xs btn-delete">Delete</button></td>
+            </tr>
+            <tr>
+              <td>05 Jun 2026</td><td><span class="meal-badge meal-lunch">Lunch</span></td>
+              <td>Tuesday Lunch</td><td>Githeri, Avocado, Juice</td><td>5</td>
+              <td class="d-flex gap-1"><button class="btn-xs btn-edit">Edit</button><button class="btn-xs btn-delete">Delete</button></td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ ADD MENU ══════════════ -->
+    <div class="section" id="section-addmenu">
+      <div class="breadcrumb-row"><i class="fas fa-home"></i> › Menus › <span>Add Menu</span></div>
+      <div class="panel" style="max-width:560px">
+        <div class="panel-header"><h6><i class="fas fa-plus-circle me-2 text-primary"></i>Add New Menu</h6></div>
+        <div class="panel-body">
+          <div class="form-row col-2">
+            <div><label class="form-label">Date *</label><input class="form-control" type="date" value="2026-06-10"></div>
+            <div>
+              <label class="form-label">Meal Type *</label>
+              <select class="form-select">
+                <option>breakfast</option><option selected>lunch</option><option>dinner</option>
+              </select>
+            </div>
+          </div>
+          <div style="margin-bottom:1rem"><label class="form-label">Description</label><input class="form-control" type="text" placeholder="e.g. Wednesday Special Lunch"></div>
+          <div style="margin-bottom:1rem">
+            <label class="form-label">Food Items</label>
+            <div id="items-list">
+              <input class="form-control" style="margin-bottom:0.5rem" type="text" placeholder="Item 1 (e.g. Ugali)">
+              <input class="form-control" style="margin-bottom:0.5rem" type="text" placeholder="Item 2 (e.g. Beef stew)">
+              <input class="form-control" style="margin-bottom:0.5rem" type="text" placeholder="Item 3 (e.g. Kachumbari)">
+            </div>
+            <button class="btn-outline-green mt-1" onclick="addItem()"><i class="fas fa-plus me-1"></i> Add Item</button>
+          </div>
+          <button class="btn-green w-100"><i class="fas fa-save me-2"></i>Save Menu</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ WEEKLY PLANNER ══════════════ -->
+    <div class="section" id="section-weekly">
+      <div class="breadcrumb-row"><i class="fas fa-home"></i> › Menus › <span>Weekly Planner</span></div>
+      <div class="panel">
+        <div class="panel-header">
+          <h6><i class="fas fa-calendar-week me-2 text-success"></i>Week of 09 Jun 2026</h6>
+          <div class="d-flex gap-2">
+            <button class="btn-outline-green">‹ Prev Week</button>
+            <button class="btn-outline-green">Next Week ›</button>
+          </div>
+        </div>
+        <div class="panel-body" style="overflow-x:auto">
+          <div class="week-grid">
+            <!-- Header row -->
+            <div class="wg-cell wg-header" style="background:#64748b"></div>
+            <div class="wg-cell wg-header">Mon 09</div>
+            <div class="wg-cell wg-header">Tue 10</div>
+            <div class="wg-cell wg-header">Wed 11</div>
+            <div class="wg-cell wg-header">Thu 12</div>
+            <div class="wg-cell wg-header">Fri 13</div>
+            <div class="wg-cell wg-header">Sat 14</div>
+            <div class="wg-cell wg-header" style="border-right:none">Sun 15</div>
+
+            <!-- Breakfast row -->
+            <div class="wg-cell wg-meal-lbl" style="background:#fef3c7;color:#92400e">☀ Breakfast</div>
+            <div class="wg-cell wg-filled"><div class="wg-food"><div class="menu-name">Monday Breakfast</div>Mandazi, Tea, Porridge</div></div>
+            <div class="wg-cell wg-filled"><div class="wg-food"><div class="menu-name">Tue Breakfast</div>Chapati, Eggs, Milk tea</div></div>
+            <div class="wg-cell wg-filled"><div class="wg-food"><div class="menu-name">Wed Breakfast</div>Bread, Butter, Tea</div></div>
+            <div class="wg-cell wg-empty">— Not set —</div>
+            <div class="wg-cell wg-filled"><div class="wg-food"><div class="menu-name">Fri Breakfast</div>Uji, Mandazi, Juice</div></div>
+            <div class="wg-cell wg-empty">— Not set —</div>
+            <div class="wg-cell wg-empty" style="border-right:none">— Not set —</div>
+
+            <!-- Lunch row -->
+            <div class="wg-cell wg-meal-lbl" style="background:#d1fae5;color:#065f46">🍽 Lunch</div>
+            <div class="wg-cell wg-filled"><div class="wg-food"><div class="menu-name">Special Lunch</div>Rice, Beans, Juice</div></div>
+            <div class="wg-cell wg-filled"><div class="wg-food"><div class="menu-name">Tue Lunch</div>Githeri, Avocado, Juice</div></div>
+            <div class="wg-cell wg-filled"><div class="wg-food"><div class="menu-name">Wed Lunch</div>Rice, Chicken curry, Salad</div></div>
+            <div class="wg-cell wg-filled"><div class="wg-food"><div class="menu-name">Thu Lunch</div>Ugali, Beef stew, Greens</div></div>
+            <div class="wg-cell wg-filled"><div class="wg-food"><div class="menu-name">Fri Lunch</div>Rice, Beans, Kachumbari</div></div>
+            <div class="wg-cell wg-empty">— Not set —</div>
+            <div class="wg-cell wg-empty" style="border-right:none">— Not set —</div>
+
+            <!-- Dinner row -->
+            <div class="wg-cell wg-meal-lbl" style="background:#ede9fe;color:#4c1d95;border-bottom:none">🌙 Dinner</div>
+            <div class="wg-cell wg-filled" style="border-bottom:none"><div class="wg-food"><div class="menu-name">Mon Dinner</div>Ugali, Greens, Lentils</div></div>
+            <div class="wg-cell wg-filled" style="border-bottom:none"><div class="wg-food"><div class="menu-name">Tue Dinner</div>Ugali, Fish, Spinach</div></div>
+            <div class="wg-cell wg-filled" style="border-bottom:none"><div class="wg-food"><div class="menu-name">Wed Dinner</div>Ugali, Lentil soup, Cabbage</div></div>
+            <div class="wg-cell wg-empty" style="border-bottom:none">— Not set —</div>
+            <div class="wg-cell wg-filled" style="border-bottom:none"><div class="wg-food"><div class="menu-name">Fri Dinner</div>Rice, Kidney beans, Salad</div></div>
+            <div class="wg-cell wg-empty" style="border-bottom:none">— Not set —</div>
+            <div class="wg-cell wg-empty" style="border-bottom:none;border-right:none">— Not set —</div>
+          </div>
+          <div class="mt-3 text-end">
+            <button class="btn-green"><i class="fas fa-save me-1"></i>Save Week</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ NOTIFICATIONS ══════════════ -->
+    <div class="section" id="section-notify">
+      <div class="breadcrumb-row"><i class="fas fa-home"></i> › <span>Send Notification</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start">
+        <div class="panel">
+          <div class="panel-header"><h6><i class="fas fa-paper-plane me-2 text-warning"></i>Broadcast Message</h6></div>
+          <div class="panel-body">
+            <div style="margin-bottom:1rem"><label class="form-label">Title *</label><input class="form-control" type="text" placeholder="e.g. Menu Update for Tomorrow"></div>
+            <div style="margin-bottom:1rem"><label class="form-label">Message *</label><textarea class="form-control" rows="4" placeholder="Type your message here…"></textarea></div>
+            <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:0.65rem 0.9rem;font-size:0.8rem;color:#15803d;margin-bottom:1rem">
+              <i class="fas fa-users me-1"></i> This will be sent to <strong>5 active students</strong>.
+            </div>
+            <button class="btn-green w-100"><i class="fas fa-paper-plane me-2"></i>Send to All Students</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header"><h6><i class="fas fa-history me-2 text-muted"></i>Recent Notifications</h6></div>
+          <div class="panel-body">
+            <div class="notif-row">
+              <div class="notif-title">Dinner Menu Change — Tonight</div>
+              <div class="notif-meta"><i class="fas fa-users me-1"></i>5 recipients &nbsp;·&nbsp; <i class="fas fa-clock me-1"></i>08 Jun 2026, 16:45</div>
+            </div>
+            <div class="notif-row">
+              <div class="notif-title">No Breakfast on Saturday</div>
+              <div class="notif-meta"><i class="fas fa-users me-1"></i>5 recipients &nbsp;·&nbsp; <i class="fas fa-clock me-1"></i>07 Jun 2026, 09:10</div>
+            </div>
+            <div class="notif-row">
+              <div class="notif-title">Special Lunch on Monday — Pilau</div>
+              <div class="notif-meta"><i class="fas fa-users me-1"></i>5 recipients &nbsp;·&nbsp; <i class="fas fa-clock me-1"></i>05 Jun 2026, 11:30</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ REPORTS ══════════════ -->
+    <div class="section" id="section-reports">
+      <div class="breadcrumb-row"><i class="fas fa-home"></i> › <span>Attendance Reports</span></div>
+
+      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="stat-card"><div class="stat-num" style="color:#3b82f6">5</div><div class="stat-lbl">Active Students</div></div>
+        <div class="stat-card"><div class="stat-num" style="color:#10b981">8</div><div class="stat-lbl">Total Confirmations</div></div>
+        <div class="stat-card"><div class="stat-num" style="color:#6366f1">7.6%</div><div class="stat-lbl">Avg. Attendance Rate</div></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:1.5rem;align-items:start">
+        <div class="panel">
+          <div class="panel-header"><h6><i class="fas fa-chart-line me-2 text-primary"></i>Daily Attendance — Last 7 Days</h6></div>
+          <div class="panel-body"><div class="chart-wrap"><canvas id="attendanceChart"></canvas></div></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header"><h6><i class="fas fa-trophy me-2 text-warning"></i>Top Attendees</h6></div>
+          <div class="panel-body" style="padding:0">
+          <table>
+            <thead><tr><th>#</th><th>Student</th><th>Confirmations</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td><div class="d-flex align-items-center gap-1"><div class="av" style="width:24px;height:24px;font-size:0.65rem">M</div>Mary Wanjiku</div></td><td><strong>3</strong></td></tr>
+              <tr><td>2</td><td><div class="d-flex align-items-center gap-1"><div class="av" style="width:24px;height:24px;font-size:0.65rem;background:#6366f1">T</div>Tarus Kim</div></td><td><strong>3</strong></td></tr>
+              <tr><td>3</td><td><div class="d-flex align-items-center gap-1"><div class="av" style="width:24px;height:24px;font-size:0.65rem">F</div>Faith Chepchumba</div></td><td><strong>3</strong></td></tr>
+              <tr><td>4</td><td><div class="d-flex align-items-center gap-1"><div class="av" style="width:24px;height:24px;font-size:0.65rem">J</div>John Kamau</div></td><td><strong>1</strong></td></tr>
+              <tr><td>5</td><td><div class="d-flex align-items-center gap-1"><div class="av" style="width:24px;height:24px;font-size:0.65rem;background:#f59e0b">D</div>Delvin Odede</div></td><td><strong>1</strong></td></tr>
+            </tbody>
+          </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header"><h6><i class="fas fa-download me-2 text-success"></i>Download Reports</h6></div>
+        <div class="panel-body">
+          <div class="dl-grid">
+            <div class="dl-card">
+              <div class="dl-icon" style="background:#d1fae5;color:#065f46"><i class="fas fa-file-excel"></i></div>
+              <div><div class="dl-title">Attendance Report</div><div class="dl-sub">All confirmed meal records</div></div>
+              <i class="fas fa-download ms-auto text-muted"></i>
+            </div>
+            <div class="dl-card">
+              <div class="dl-icon" style="background:#dbeafe;color:#1e40af"><i class="fas fa-file-excel"></i></div>
+              <div><div class="dl-title">Today's Attendance</div><div class="dl-sub">Confirmed students for today</div></div>
+              <i class="fas fa-download ms-auto text-muted"></i>
+            </div>
+            <div class="dl-card">
+              <div class="dl-icon" style="background:#fef3c7;color:#92400e"><i class="fas fa-file-excel"></i></div>
+              <div><div class="dl-title">Menu Schedule</div><div class="dl-sub">All menus with items &amp; counts</div></div>
+              <i class="fas fa-download ms-auto text-muted"></i>
+            </div>
+            <div class="dl-card">
+              <div class="dl-icon" style="background:#fee2e2;color:#991b1b"><i class="fas fa-file-excel"></i></div>
+              <div><div class="dl-title">User List</div><div class="dl-sub">Full roster — Admin only</div></div>
+              <i class="fas fa-download ms-auto text-muted"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+
+  <footer><strong>UEAB Cafeteria Attendance &amp; Meal Management System</strong> — INSY 492 Senior Project</footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  const titles = {
+    dashboard:'Admin Dashboard', users:'User Management', students:'Student List',
+    adduser:'Add User', menus:'Menu Management', addmenu:'Add Menu',
+    weekly:'Weekly Planner', notify:'Send Notification', reports:'Attendance Reports'
+  };
+
+  function show(id) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.sb-nav a').forEach(a => a.classList.remove('active'));
+    document.getElementById('section-' + id).classList.add('active');
+    const nav = document.getElementById('nav-' + id);
+    if (nav) nav.classList.add('active');
+    document.getElementById('page-title').textContent = titles[id] || '';
+  }
+
+  function addItem() {
+    const list = document.getElementById('items-list');
+    const n = list.children.length + 1;
+    const inp = document.createElement('input');
+    inp.className = 'form-control';
+    inp.style.marginBottom = '0.5rem';
+    inp.type = 'text';
+    inp.placeholder = 'Item ' + n;
+    list.appendChild(inp);
+  }
+
+  // Chart
+  window.addEventListener('load', () => {
+    const ctx = document.getElementById('attendanceChart');
+    if (!ctx) return;
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['Mon 03','Tue 04','Wed 05','Thu 06','Fri 07','Sat 08','Sun 09'],
+        datasets: [
+          { label: 'Breakfast', data: [3,4,2,4,3,0,0], backgroundColor: 'rgba(245,158,11,0.7)', borderRadius: 4 },
+          { label: 'Lunch',     data: [5,4,5,4,4,0,4], backgroundColor: 'rgba(16,185,129,0.7)',  borderRadius: 4 },
+          { label: 'Dinner',    data: [3,3,3,3,2,0,0], backgroundColor: 'rgba(99,102,241,0.7)',  borderRadius: 4 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+          y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 11 } }, grid: { color: '#f1f5f9' } }
+        }
+      }
+    });
+  });
+</script>
+</body>
+</html>

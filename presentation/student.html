@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Portal — UEAB Cafeteria</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --green:    #1a6e3c;
+      --green-dk: #145530;
+      --green-lt: #e8f5ee;
+      --bg:       #f1f5f9;
+      --border:   #e2e8f0;
+      --text:     #1e293b;
+      --muted:    #64748b;
+      --radius:   12px;
+      --shadow:   0 2px 12px rgba(0,0,0,0.08);
+    }
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* ── Navbar ── */
+    #mainNav {
+      background: var(--green);
+      padding: 0.6rem 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .nav-inner { max-width: 1100px; margin: 0 auto; padding: 0 1.25rem; display: flex; align-items: center; justify-content: space-between; }
+    .nav-brand { color: white; font-weight: 700; font-size: 1rem; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; }
+    .nav-links { display: flex; gap: 0.25rem; }
+    .nav-link-item {
+      color: rgba(255,255,255,0.8);
+      padding: 0.4rem 0.9rem;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      display: flex; align-items: center; gap: 0.4rem;
+    }
+    .nav-link-item:hover, .nav-link-item.active { background: rgba(255,255,255,0.15); color: white; }
+    .nav-link-item .badge { font-size: 0.6rem; padding: 0.15rem 0.4rem; border-radius: 999px; background: #ef4444; color: white; font-weight: 700; }
+    .nav-user {
+      display: flex; align-items: center; gap: 0.55rem;
+      color: white; font-size: 0.85rem; cursor: pointer;
+      position: relative;
+    }
+    .nav-user .av {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.8rem;
+    }
+    .role-badge { font-size: 0.6rem; padding: 0.15rem 0.5rem; border-radius: 999px; font-weight: 600; text-transform: uppercase; }
+    .role-student { background: #3b82f6; color: white; }
+
+    /* ── Main ── */
+    .main-content { flex: 1; max-width: 1100px; margin: 0 auto; padding: 0 1.25rem 3rem; width: 100%; }
+
+    /* ── Sections ── */
+    .section { display: none; padding-top: 1.75rem; }
+    .section.active { display: block; }
+
+    /* ── Page header ── */
+    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .page-header h4 { font-weight: 700; margin: 0 0 0.2rem; }
+    .page-header .date-txt { font-size: 0.82rem; color: var(--muted); }
+
+    /* ── Meal cards ── */
+    .meals-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .meal-card {
+      background: white;
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    }
+    .meal-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+    .meal-card.confirmed { border-color: #10b981; background: #f0fdf4; }
+    .meal-header { padding: 0.75rem 1rem; color: white; display: flex; align-items: center; justify-content: space-between; }
+    .meal-breakfast { background: linear-gradient(135deg,#f59e0b,#d97706); }
+    .meal-lunch     { background: linear-gradient(135deg,#10b981,#059669); }
+    .meal-dinner    { background: linear-gradient(135deg,#6366f1,#4f46e5); }
+    .meal-body { padding: 1rem; }
+    .meal-items li { padding: 0.2rem 0; font-size: 0.88rem; }
+    .confirm-count { font-size: 0.78rem; color: var(--muted); }
+    .btn-confirm {
+      padding: 0.4rem 1rem; font-size: 0.82rem; border-radius: 8px; border: none;
+      cursor: pointer; font-weight: 600; transition: all 0.15s;
+    }
+    .btn-confirm.unconfirmed { background: var(--green-lt); color: var(--green); border: 1.5px solid #a7d9bb; }
+    .btn-confirm.confirmed   { background: #10b981; color: white; }
+    .btn-confirm:hover { opacity: 0.88; }
+
+    /* ── Toast ── */
+    #toastContainer { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; }
+    .toast-pop { min-width: 240px; padding: 0.75rem 1.25rem; border-radius: 10px; color: white; font-size: 0.88rem; box-shadow: 0 4px 16px rgba(0,0,0,0.15); animation: slideIn 0.3s ease; }
+    .toast-success { background: #10b981; }
+    .toast-info    { background: #3b82f6; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    /* ── Menu browser ── */
+    .date-label { background: var(--green-lt); color: var(--green); padding: 0.35rem 0.9rem; border-radius: 8px; display: inline-block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.75rem; margin-top: 1rem; }
+    .menu-list-card {
+      background: white; border: 1.5px solid var(--border); border-radius: var(--radius);
+      padding: 1rem; margin-bottom: 0.75rem;
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    }
+    .menu-list-card.past { opacity: 0.65; background: #f8fafc; }
+    .meal-badge { font-size: 0.72rem; padding: 0.2rem 0.55rem; border-radius: 999px; font-weight: 600; }
+    .meal-badge-breakfast { background: #fef3c7; color: #92400e; }
+    .meal-badge-lunch     { background: #d1fae5; color: #065f46; }
+    .meal-badge-dinner    { background: #ede9fe; color: #4c1d95; }
+
+    /* ── Notifications ── */
+    .notif-card { background: white; border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 0.75rem; border-left: 3px solid var(--green); box-shadow: var(--shadow); }
+    .notif-card.unread { border-left-color: #3b82f6; background: #f0f7ff; }
+    .notif-title { font-weight: 600; font-size: 0.92rem; }
+    .notif-msg   { font-size: 0.84rem; color: var(--muted); margin: 0.25rem 0; }
+    .notif-time  { font-size: 0.74rem; color: var(--muted); }
+
+    /* ── Reports ── */
+    .reports-table-wrap { background: white; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+    table { width: 100%; border-collapse: collapse; }
+    thead th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); padding: 0.65rem 0.9rem; border-bottom: 1px solid var(--border); background: #f8fafc; text-align: left; }
+    tbody td { padding: 0.75rem 0.9rem; font-size: 0.88rem; border-bottom: 1px solid #f1f5f9; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #fafcff; }
+
+    /* ── Buttons ── */
+    .btn-green { background: var(--green); color: white; padding: 0.5rem 1.25rem; font-size: 0.85rem; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; }
+    .btn-outline-green { background: white; color: var(--green); border: 1.5px solid var(--green); padding: 0.45rem 1rem; font-size: 0.82rem; border-radius: 8px; cursor: pointer; font-weight: 600; }
+
+    /* ── Empty state ── */
+    .empty-state { text-align: center; padding: 3rem 1rem; color: var(--muted); }
+    .empty-state i { font-size: 2.5rem; opacity: 0.3; margin-bottom: 1rem; display: block; }
+
+    /* ── Footer ── */
+    footer { background: var(--green); color: rgba(255,255,255,0.75); text-align: center; padding: 0.85rem; font-size: 0.8rem; margin-top: auto; }
+    footer strong { color: white; }
+  </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav id="mainNav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-brand"><i class="fas fa-utensils"></i> UEAB Cafeteria</a>
+    <div class="nav-links">
+      <span class="nav-link-item active" id="nav-dashboard" onclick="show('dashboard')">
+        <i class="fas fa-home"></i> Home
+      </span>
+      <span class="nav-link-item" id="nav-menu" onclick="show('menu')">
+        <i class="fas fa-utensils"></i> Menu
+      </span>
+      <span class="nav-link-item" id="nav-notifications" onclick="show('notifications')">
+        <i class="fas fa-bell"></i> Notifications <span class="badge">2</span>
+      </span>
+      <span class="nav-link-item" id="nav-reports" onclick="show('reports')">
+        <i class="fas fa-file-alt"></i> My Reports
+      </span>
+    </div>
+    <div class="nav-user">
+      <div class="av">J</div>
+      <span>John</span>
+      <span class="role-badge role-student">Student</span>
+    </div>
+  </div>
+</nav>
+
+<div class="main-content">
+
+  <!-- ══════════════ STUDENT DASHBOARD ══════════════ -->
+  <div class="section active" id="section-dashboard">
+    <div class="page-header">
+      <div>
+        <h4 id="greeting">Good Morning, John!</h4>
+        <div class="date-txt">Monday, 09 June 2026</div>
+      </div>
+      <div class="d-flex gap-2">
+        <span onclick="show('notifications')" style="cursor:pointer" class="btn-outline-green position-relative">
+          Notifications <span style="background:#ef4444;color:white;font-size:0.6rem;padding:0.1rem 0.4rem;border-radius:999px;margin-left:4px">2</span>
+        </span>
+        <span onclick="show('reports')" class="btn-outline-green" style="cursor:pointer">My Reports</span>
+      </div>
+    </div>
+
+    <h5 class="fw-bold mb-3">Today's Meals</h5>
+    <div class="meals-grid">
+
+      <!-- Breakfast -->
+      <div class="meal-card" id="card-breakfast">
+        <div class="meal-header meal-breakfast">
+          <span class="fw-bold text-uppercase fs-6">Breakfast</span>
+        </div>
+        <div class="meal-body">
+          <p class="text-muted" style="font-size:0.82rem;margin-bottom:0.75rem">Monday Breakfast</p>
+          <ul class="meal-items list-unstyled mb-3">
+            <li>— Mandazi</li>
+            <li>— Tea</li>
+            <li>— Porridge</li>
+          </ul>
+          <div class="d-flex align-items-center justify-content-between">
+            <span class="confirm-count">3 confirmed</span>
+            <button class="btn-confirm unconfirmed" onclick="toggleConfirm(this,'breakfast')">Confirm</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lunch — already confirmed -->
+      <div class="meal-card confirmed" id="card-lunch">
+        <div class="meal-header meal-lunch">
+          <span class="fw-bold text-uppercase fs-6">Lunch</span>
+          <span style="background:white;color:#10b981;font-size:0.72rem;padding:0.2rem 0.6rem;border-radius:999px;font-weight:700">Confirmed</span>
+        </div>
+        <div class="meal-body">
+          <p class="text-muted" style="font-size:0.82rem;margin-bottom:0.75rem">Special Lunch</p>
+          <ul class="meal-items list-unstyled mb-3">
+            <li>— Rice</li>
+            <li>— Beans</li>
+            <li>— Juice</li>
+          </ul>
+          <div class="d-flex align-items-center justify-content-between">
+            <span class="confirm-count">4 confirmed</span>
+            <button class="btn-confirm confirmed" onclick="toggleConfirm(this,'lunch')">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dinner -->
+      <div class="meal-card" id="card-dinner">
+        <div class="meal-header meal-dinner">
+          <span class="fw-bold text-uppercase fs-6">Dinner</span>
+        </div>
+        <div class="meal-body">
+          <p class="text-muted" style="font-size:0.82rem;margin-bottom:0.75rem">Monday Dinner</p>
+          <ul class="meal-items list-unstyled mb-3">
+            <li>— Ugali</li>
+            <li>— Greens</li>
+            <li>— Lentil soup</li>
+          </ul>
+          <div class="d-flex align-items-center justify-content-between">
+            <span class="confirm-count">2 confirmed</span>
+            <button class="btn-confirm unconfirmed" onclick="toggleConfirm(this,'dinner')">Confirm</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="text-end">
+      <span onclick="show('menu')" style="cursor:pointer;color:var(--green);font-size:0.84rem;font-weight:500">View all upcoming menus →</span>
+    </div>
+  </div>
+
+  <!-- ══════════════ MENU BROWSER ══════════════ -->
+  <div class="section" id="section-menu">
+    <div class="page-header">
+      <div><h4 class="fw-bold">Meal Menu</h4><p class="text-muted" style="font-size:0.82rem;margin:0">Browse upcoming and past meals</p></div>
+    </div>
+
+    <div class="date-label"><i class="fas fa-star me-1"></i>Today — 09 Jun 2026</div>
+    <div class="menu-list-card">
+      <div class="d-flex align-items-center gap-3" style="flex:1">
+        <span class="meal-badge meal-badge-lunch">Lunch</span>
+        <div><div class="fw-semibold" style="font-size:0.9rem">Special Lunch</div><div style="font-size:0.78rem;color:var(--muted)">Rice, Beans, Juice</div></div>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span style="font-size:0.78rem;color:var(--muted)">4 confirmed</span>
+        <button class="btn-confirm confirmed" style="font-size:0.78rem;padding:0.3rem 0.75rem">Cancel</button>
+      </div>
+    </div>
+
+    <div class="date-label">Tomorrow — 10 Jun 2026</div>
+    <div class="menu-list-card">
+      <div class="d-flex align-items-center gap-3" style="flex:1">
+        <span class="meal-badge meal-badge-breakfast">Breakfast</span>
+        <div><div class="fw-semibold" style="font-size:0.9rem">Tuesday Breakfast</div><div style="font-size:0.78rem;color:var(--muted)">Chapati, Eggs, Milk tea</div></div>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span style="font-size:0.78rem;color:var(--muted)">1 confirmed</span>
+        <button class="btn-confirm unconfirmed" style="font-size:0.78rem;padding:0.3rem 0.75rem">Confirm</button>
+      </div>
+    </div>
+    <div class="menu-list-card">
+      <div class="d-flex align-items-center gap-3" style="flex:1">
+        <span class="meal-badge meal-badge-lunch">Lunch</span>
+        <div><div class="fw-semibold" style="font-size:0.9rem">Tuesday Lunch</div><div style="font-size:0.78rem;color:var(--muted)">Githeri, Avocado, Juice</div></div>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span style="font-size:0.78rem;color:var(--muted)">3 confirmed</span>
+        <button class="btn-confirm unconfirmed" style="font-size:0.78rem;padding:0.3rem 0.75rem">Confirm</button>
+      </div>
+    </div>
+    <div class="menu-list-card">
+      <div class="d-flex align-items-center gap-3" style="flex:1">
+        <span class="meal-badge meal-badge-dinner">Dinner</span>
+        <div><div class="fw-semibold" style="font-size:0.9rem">Tuesday Dinner</div><div style="font-size:0.78rem;color:var(--muted)">Ugali, Fish, Spinach</div></div>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span style="font-size:0.78rem;color:var(--muted)">2 confirmed</span>
+        <button class="btn-confirm unconfirmed" style="font-size:0.78rem;padding:0.3rem 0.75rem">Confirm</button>
+      </div>
+    </div>
+
+    <div class="date-label" style="opacity:0.7">Past — 06 Jun 2026</div>
+    <div class="menu-list-card past">
+      <div class="d-flex align-items-center gap-3" style="flex:1">
+        <span class="meal-badge meal-badge-lunch">Lunch</span>
+        <div><div class="fw-semibold" style="font-size:0.9rem">Wednesday Lunch</div><div style="font-size:0.78rem;color:var(--muted)">White rice, Chicken curry, Salad</div></div>
+      </div>
+      <span style="font-size:0.75rem;color:var(--muted);font-style:italic">Past meal</span>
+    </div>
+    <div class="menu-list-card past">
+      <div class="d-flex align-items-center gap-3" style="flex:1">
+        <span class="meal-badge meal-badge-dinner">Dinner</span>
+        <div><div class="fw-semibold" style="font-size:0.9rem">Wednesday Dinner</div><div style="font-size:0.78rem;color:var(--muted)">Ugali, Lentil soup, Cabbage</div></div>
+      </div>
+      <span style="font-size:0.75rem;color:var(--muted);font-style:italic">Past meal</span>
+    </div>
+  </div>
+
+  <!-- ══════════════ NOTIFICATIONS ══════════════ -->
+  <div class="section" id="section-notifications">
+    <div class="page-header">
+      <div><h4 class="fw-bold">Notifications</h4><p class="text-muted" style="font-size:0.82rem;margin:0">Messages from admin and staff</p></div>
+    </div>
+
+    <div class="notif-card unread">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="notif-title">Dinner Menu Change — Tonight</div>
+          <div class="notif-msg">Please note that tonight's dinner will be Chapati and Beef Stew instead of the originally scheduled Ugali.</div>
+          <div class="notif-time"><i class="fas fa-clock me-1"></i>08 Jun 2026, 16:45</div>
+        </div>
+        <span style="background:#3b82f6;color:white;font-size:0.65rem;padding:0.2rem 0.5rem;border-radius:999px;font-weight:600;white-space:nowrap;margin-left:1rem">New</span>
+      </div>
+    </div>
+
+    <div class="notif-card unread">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <div class="notif-title">No Breakfast on Saturday</div>
+          <div class="notif-msg">The cafeteria will not serve breakfast this Saturday, 14 June. Lunch and dinner will remain available.</div>
+          <div class="notif-time"><i class="fas fa-clock me-1"></i>07 Jun 2026, 09:10</div>
+        </div>
+        <span style="background:#3b82f6;color:white;font-size:0.65rem;padding:0.2rem 0.5rem;border-radius:999px;font-weight:600;white-space:nowrap;margin-left:1rem">New</span>
+      </div>
+    </div>
+
+    <div class="notif-card">
+      <div class="notif-title">Special Lunch on Monday — Pilau</div>
+      <div class="notif-msg">This coming Monday we will be serving special Pilau for lunch in honour of the university anniversary. Don't miss it!</div>
+      <div class="notif-time"><i class="fas fa-clock me-1"></i>05 Jun 2026, 11:30</div>
+    </div>
+
+    <div class="notif-card">
+      <div class="notif-title">Cafeteria Hours Update</div>
+      <div class="notif-msg">Starting next week, dinner service will close at 8:30 PM instead of 9:00 PM. Please plan accordingly.</div>
+      <div class="notif-time"><i class="fas fa-clock me-1"></i>03 Jun 2026, 14:00</div>
+    </div>
+  </div>
+
+  <!-- ══════════════ MY REPORTS ══════════════ -->
+  <div class="section" id="section-reports">
+    <div class="page-header">
+      <div><h4 class="fw-bold">My Attendance History</h4><p class="text-muted" style="font-size:0.82rem;margin:0">All your confirmed meals</p></div>
+      <button class="btn-green"><i class="fas fa-download me-2"></i>Download CSV</button>
+    </div>
+
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:var(--radius);padding:0.85rem 1.25rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:1rem">
+      <i class="fas fa-check-circle" style="color:#10b981;font-size:1.5rem"></i>
+      <div>
+        <div class="fw-bold" style="font-size:0.9rem">Total Confirmations: <span style="color:var(--green)">4 meals</span></div>
+        <div style="font-size:0.78rem;color:var(--muted)">Across breakfast, lunch, and dinner</div>
+      </div>
+    </div>
+
+    <div class="reports-table-wrap">
+      <table>
+        <thead>
+          <tr><th>Date</th><th>Meal Type</th><th>Menu</th><th>Confirmed At</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>09 Jun 2026</strong> <span style="background:#d1fae5;color:#065f46;font-size:0.65rem;padding:0.1rem 0.4rem;border-radius:999px;margin-left:4px">Today</span></td>
+            <td><span class="meal-badge meal-badge-lunch">Lunch</span></td>
+            <td>Special Lunch</td>
+            <td>09 Jun 2026 11:03</td>
+          </tr>
+          <tr>
+            <td>05 Jun 2026</td>
+            <td><span class="meal-badge meal-badge-lunch">Lunch</span></td>
+            <td>Tuesday Lunch</td>
+            <td>05 Jun 2026 12:18</td>
+          </tr>
+          <tr>
+            <td>04 Jun 2026</td>
+            <td><span class="meal-badge meal-badge-dinner">Dinner</span></td>
+            <td>Monday Dinner</td>
+            <td>04 Jun 2026 17:45</td>
+          </tr>
+          <tr>
+            <td>04 Jun 2026</td>
+            <td><span class="meal-badge meal-badge-breakfast">Breakfast</span></td>
+            <td>Monday Breakfast</td>
+            <td>04 Jun 2026 07:22</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /main-content -->
+
+<footer>
+  <strong>UEAB Cafeteria Attendance &amp; Meal Management System</strong> — INSY 492 Senior Project
+</footer>
+
+<div id="toastContainer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // Time-based greeting
+  (function() {
+    const h = new Date().getHours();
+    const g = h < 12 ? 'Good Morning' : h < 17 ? 'Good Afternoon' : h < 21 ? 'Good Evening' : 'Good Night';
+    const el = document.getElementById('greeting');
+    if (el) el.textContent = g + ', John!';
+  })();
+
+  // Section switcher
+  function show(id) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-link-item').forEach(a => a.classList.remove('active'));
+    document.getElementById('section-' + id).classList.add('active');
+    const nav = document.getElementById('nav-' + id);
+    if (nav) nav.classList.add('active');
+  }
+
+  // Confirm toggle demo
+  function toggleConfirm(btn, meal) {
+    const card = document.getElementById('card-' + meal);
+    const isConfirmed = btn.classList.contains('confirmed');
+    const countEl = card ? card.querySelector('.confirm-count') : null;
+    const headerEl = card ? card.querySelector('.meal-header') : null;
+
+    if (isConfirmed) {
+      btn.classList.remove('confirmed');
+      btn.classList.add('unconfirmed');
+      btn.textContent = 'Confirm';
+      if (card) card.classList.remove('confirmed');
+      // remove badge
+      const badge = headerEl ? headerEl.querySelector('span:not(.fw-bold)') : null;
+      if (badge) badge.remove();
+      // update count
+      if (countEl) {
+        const n = parseInt(countEl.textContent) - 1;
+        countEl.textContent = n + ' confirmed';
+      }
+      showToast('Attendance cancelled.', 'info');
+    } else {
+      btn.classList.remove('unconfirmed');
+      btn.classList.add('confirmed');
+      btn.textContent = 'Cancel';
+      if (card) card.classList.add('confirmed');
+      // add badge
+      if (headerEl && !headerEl.querySelector('span:not(.fw-bold)')) {
+        const b = document.createElement('span');
+        b.style.cssText = 'background:white;color:#10b981;font-size:0.72rem;padding:0.2rem 0.6rem;border-radius:999px;font-weight:700';
+        b.textContent = 'Confirmed';
+        headerEl.appendChild(b);
+      }
+      if (countEl) {
+        const n = parseInt(countEl.textContent) + 1;
+        countEl.textContent = n + ' confirmed';
+      }
+      showToast('Attendance confirmed!', 'success');
+    }
+  }
+
+  function showToast(msg, type) {
+    const container = document.getElementById('toastContainer');
+    const t = document.createElement('div');
+    t.className = 'toast-pop toast-' + type;
+    t.innerHTML = '<i class="fas fa-' + (type === 'success' ? 'check-circle' : 'info-circle') + ' me-2"></i>' + msg;
+    container.appendChild(t);
+    setTimeout(() => { t.style.transition = 'opacity 0.4s'; t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 3000);
+  }
+</script>
+</body>
+</html>
