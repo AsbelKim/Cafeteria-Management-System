@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>System Diagrams — UEAB Cafeteria</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --green:    #1a6e3c;
+      --green-dk: #145530;
+      --green-lt: #e8f5ee;
+      --bg:       #f1f5f9;
+      --border:   #e2e8f0;
+      --text:     #1e293b;
+      --muted:    #64748b;
+      --blue:     #1d4ed8;
+      --indigo:   #4f46e5;
+      --amber:    #d97706;
+      --red:      #dc2626;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* ── Top bar ── */
+    header {
+      background: var(--green);
+      color: white;
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    header .title { font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 0.6rem; }
+    header .subtitle { font-size: 0.78rem; opacity: 0.8; }
+    header a { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 0.82rem; }
+    header a:hover { color: white; }
+
+    /* ── Tab nav ── */
+    .tab-bar {
+      background: white;
+      border-bottom: 2px solid var(--border);
+      padding: 0 1.5rem;
+      display: flex;
+      gap: 0;
+      overflow-x: auto;
+    }
+    .tab-btn {
+      padding: 0.85rem 1.25rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--muted);
+      border: none;
+      border-bottom: 3px solid transparent;
+      background: none;
+      cursor: pointer;
+      white-space: nowrap;
+      margin-bottom: -2px;
+      transition: color 0.15s, border-color 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+    .tab-btn:hover { color: var(--green); }
+    .tab-btn.active { color: var(--green); border-bottom-color: var(--green); }
+
+    /* ── Content ── */
+    .content { flex: 1; padding: 1.75rem 1.5rem; max-width: 1200px; margin: 0 auto; width: 100%; }
+    .diagram-section { display: none; }
+    .diagram-section.active { display: block; }
+
+    .diagram-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.4rem; }
+    .diagram-desc  { font-size: 0.85rem; color: var(--muted); margin-bottom: 1.5rem; }
+
+    .diagram-card {
+      background: white;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      padding: 2rem;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      overflow-x: auto;
+    }
+
+    /* ── Legend ── */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 1.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+    }
+    .legend-item { display: flex; align-items: center; gap: 0.45rem; font-size: 0.78rem; color: var(--muted); }
+    .legend-dot  { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ══════════════════════════════════════
+       DIAGRAM 1 — SYSTEM ARCHITECTURE (CSS)
+    ══════════════════════════════════════ */
+    .arch-wrap { font-size: 0.82rem; }
+    .arch-layer {
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.5rem;
+      border: 2px solid;
+      position: relative;
+    }
+    .arch-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .arch-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.25rem; }
+    .arch-sub   { font-size: 0.78rem; opacity: 0.75; }
+    .arch-arrow {
+      text-align: center;
+      font-size: 1.4rem;
+      color: var(--muted);
+      line-height: 1;
+      margin: 0.15rem 0;
+    }
+    .arch-arrow span { font-size: 0.7rem; display: block; color: var(--muted); margin-top: 0.1rem; }
+
+    .layer-browser  { background: #eff6ff; border-color: #93c5fd; }
+    .layer-browser .arch-label { color: var(--blue); }
+
+    .layer-flask    { background: #f0fdf4; border-color: #86efac; }
+    .layer-flask .arch-label { color: var(--green); }
+
+    .layer-db       { background: #fef3c7; border-color: #fcd34d; }
+    .layer-db .arch-label { color: var(--amber); }
+
+    .layer-cloud    { background: #f5f3ff; border-color: #c4b5fd; }
+    .layer-cloud .arch-label { color: var(--indigo); }
+
+    .blueprint-row {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin: 0.5rem 0;
+    }
+    .bp-chip {
+      background: white;
+      border: 1.5px solid #86efac;
+      border-radius: 8px;
+      padding: 0.3rem 0.8rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--green);
+    }
+    .db-chips { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.4rem; }
+    .db-chip {
+      background: white;
+      border: 1.5px solid #fcd34d;
+      border-radius: 6px;
+      padding: 0.2rem 0.6rem;
+      font-size: 0.74rem;
+      font-weight: 600;
+      color: var(--amber);
+    }
+    .cloud-row { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.4rem; }
+    .cloud-item {
+      background: white;
+      border: 1.5px solid #c4b5fd;
+      border-radius: 8px;
+      padding: 0.3rem 0.8rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--indigo);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    /* ══════════════════════════════════════
+       DIAGRAM 3 — USE CASE (SVG)
+    ══════════════════════════════════════ */
+    .uc-svg { width: 100%; height: auto; display: block; }
+
+    /* ══════════════════════════════════════
+       DIAGRAM 4 — DFD
+    ══════════════════════════════════════ */
+    .dfd-svg { width: 100%; height: auto; display: block; }
+
+    /* ══════════════════════════════════════
+       MERMAID DIAGRAMS
+    ══════════════════════════════════════ */
+    .mermaid { max-width: 100%; overflow-x: auto; }
+
+    /* ── Footer ── */
+    footer {
+      background: var(--green);
+      color: rgba(255,255,255,0.75);
+      text-align: center;
+      padding: 0.75rem;
+      font-size: 0.78rem;
+    }
+    footer strong { color: white; }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div>
+    <div class="title"><i class="fas fa-project-diagram"></i> System Design Diagrams</div>
+    <div class="subtitle">UEAB Cafeteria Management System — INSY 492 Senior Project</div>
+  </div>
+  <a href="index.html"><i class="fas fa-arrow-left me-1"></i> Back to Overview</a>
+</header>
+
+<!-- TAB BAR -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="showTab('architecture')" id="tab-architecture">
+    <i class="fas fa-layer-group"></i> System Architecture
+  </button>
+  <button class="tab-btn" onclick="showTab('er')" id="tab-er">
+    <i class="fas fa-database"></i> ER Diagram
+  </button>
+  <button class="tab-btn" onclick="showTab('usecase')" id="tab-usecase">
+    <i class="fas fa-user-check"></i> Use Case Diagram
+  </button>
+  <button class="tab-btn" onclick="showTab('dfd')" id="tab-dfd">
+    <i class="fas fa-exchange-alt"></i> DFD
+  </button>
+  <button class="tab-btn" onclick="showTab('flowcharts')" id="tab-flowcharts">
+    <i class="fas fa-code-branch"></i> Flowcharts
+  </button>
+</div>
+
+<div class="content">
+
+  <!-- ══════════════════════════════════════════════════
+       TAB 1 — SYSTEM ARCHITECTURE
+  ══════════════════════════════════════════════════ -->
+  <div class="diagram-section active" id="sec-architecture">
+    <div class="diagram-title">System Architecture Diagram</div>
+    <div class="diagram-desc">MVC layered architecture — showing how the browser, Flask application, database, and cloud infrastructure interact.</div>
+
+    <div class="diagram-card">
+      <div class="arch-wrap">
+
+        <!-- Browser -->
+        <div class="arch-layer layer-browser">
+          <div class="arch-label"><i class="fas fa-desktop me-1"></i> Presentation Layer — Client</div>
+          <div class="arch-title">Web Browser</div>
+          <div class="arch-sub">HTML5 &nbsp;·&nbsp; CSS3 &nbsp;·&nbsp; Bootstrap 5.3 &nbsp;·&nbsp; JavaScript (ES6) &nbsp;·&nbsp; Font Awesome &nbsp;·&nbsp; AJAX (fetch API)</div>
+        </div>
+
+        <div class="arch-arrow">⇅ <span>HTTP / HTTPS Requests &amp; Responses</span></div>
+
+        <!-- Flask App -->
+        <div class="arch-layer layer-flask">
+          <div class="arch-label"><i class="fab fa-python me-1"></i> Application Layer — Flask (Python 3)</div>
+          <div class="arch-title">Flask Application &nbsp;<code style="font-size:0.75rem;background:#d1fae5;padding:0.1rem 0.4rem;border-radius:4px">run.py → create_app()</code></div>
+          <div style="margin-top:0.75rem">
+            <div style="font-size:0.74rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem">BLUEPRINTS (Controllers)</div>
+            <div class="blueprint-row">
+              <div class="bp-chip"><i class="fas fa-lock me-1"></i>auth <span style="font-weight:400;opacity:0.7">/auth</span></div>
+              <div class="bp-chip"><i class="fas fa-user-graduate me-1"></i>student <span style="font-weight:400;opacity:0.7">/student</span></div>
+              <div class="bp-chip"><i class="fas fa-users me-1"></i>staff <span style="font-weight:400;opacity:0.7">/staff</span></div>
+              <div class="bp-chip"><i class="fas fa-user-shield me-1"></i>admin <span style="font-weight:400;opacity:0.7">/admin</span></div>
+              <div class="bp-chip"><i class="fas fa-chart-bar me-1"></i>reports <span style="font-weight:400;opacity:0.7">/reports</span></div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:0.75rem">
+            <div style="background:white;border-radius:8px;padding:0.6rem 0.9rem;border:1px solid #86efac">
+              <div style="font-size:0.74rem;font-weight:700;color:var(--muted);margin-bottom:0.3rem">VIEW</div>
+              <div style="font-size:0.8rem">Jinja2 Templates (20 HTML files)<br><span style="color:var(--muted);font-size:0.74rem">base.html + auth/ student/ staff/ admin/ reports/</span></div>
+            </div>
+            <div style="background:white;border-radius:8px;padding:0.6rem 0.9rem;border:1px solid #86efac">
+              <div style="font-size:0.74rem;font-weight:700;color:var(--muted);margin-bottom:0.3rem">MODEL</div>
+              <div style="font-size:0.8rem">SQLAlchemy ORM (models.py)<br><span style="color:var(--muted);font-size:0.74rem">User · Menu · MenuItem · Attendance · Notification</span></div>
+            </div>
+          </div>
+          <div style="margin-top:0.75rem;display:flex;gap:1.5rem;flex-wrap:wrap">
+            <div style="font-size:0.78rem"><strong>Auth:</strong> Flask-Login · Werkzeug (PBKDF2-SHA256)</div>
+            <div style="font-size:0.78rem"><strong>Reports:</strong> openpyxl · Pillow (watermark)</div>
+            <div style="font-size:0.78rem"><strong>Config:</strong> python-dotenv · SSL via cryptography</div>
+          </div>
+        </div>
+
+        <div class="arch-arrow">⇅ <span>PyMySQL driver · SSL/TLS encrypted connection</span></div>
+
+        <!-- Database -->
+        <div class="arch-layer layer-db">
+          <div class="arch-label"><i class="fas fa-database me-1"></i> Data Layer — MySQL 8.0</div>
+          <div class="arch-title">Relational Database &nbsp;<code style="font-size:0.75rem;background:#fef9c3;padding:0.1rem 0.4rem;border-radius:4px">cafeteria_db</code></div>
+          <div class="db-chips">
+            <div class="db-chip">users</div>
+            <div class="db-chip">menus</div>
+            <div class="db-chip">menu_items</div>
+            <div class="db-chip">attendance_confirmations</div>
+            <div class="db-chip">notifications</div>
+            <div class="db-chip">password_reset_codes</div>
+          </div>
+        </div>
+
+        <div class="arch-arrow">⇅ <span>Deployed &amp; managed on cloud infrastructure</span></div>
+
+        <!-- Cloud -->
+        <div class="arch-layer layer-cloud">
+          <div class="arch-label"><i class="fas fa-cloud me-1"></i> Infrastructure Layer — Cloud Deployment</div>
+          <div class="cloud-row">
+            <div class="cloud-item"><i class="fab fa-github"></i> GitHub (Source &amp; CI/CD trigger)</div>
+            <div style="font-size:1.2rem;align-self:center;color:var(--muted)">→</div>
+            <div class="cloud-item"><i class="fas fa-server"></i> Render (Python Web Service · Gunicorn · 2 workers)</div>
+            <div style="font-size:1.2rem;align-self:center;color:var(--muted)">↔</div>
+            <div class="cloud-item"><i class="fas fa-database"></i> Aiven (Managed MySQL · SSL/TLS)</div>
+          </div>
+          <div style="margin-top:0.6rem;font-size:0.78rem;color:var(--muted)">
+            Alternative: Netlify Serverless (serverless-wsgi wraps Flask as a Netlify Function)
+          </div>
+        </div>
+
+      </div><!-- /arch-wrap -->
+
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#93c5fd"></div> Presentation Layer</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#86efac"></div> Application Layer (MVC)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#fcd34d"></div> Data Layer</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#c4b5fd"></div> Infrastructure Layer</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       TAB 2 — ER DIAGRAM
+  ══════════════════════════════════════════════════ -->
+  <div class="diagram-section" id="sec-er">
+    <div class="diagram-title">Entity Relationship (ER) Diagram</div>
+    <div class="diagram-desc">Database schema showing all 6 tables, their attributes, primary/foreign keys, and relationships.</div>
+
+    <div class="diagram-card">
+      <pre class="mermaid">
+erDiagram
+    users {
+        int id PK
+        varchar name
+        varchar email
+        varchar student_id
+        varchar password_hash
+        enum role
+        boolean is_active
+        boolean must_change_password
+        datetime created_at
+    }
+
+    menus {
+        int id PK
+        date date
+        enum meal_type
+        text description
+        datetime created_at
+    }
+
+    menu_items {
+        int id PK
+        int menu_id FK
+        varchar name
+        varchar description
+    }
+
+    attendance_confirmations {
+        int id PK
+        int user_id FK
+        int menu_id FK
+        datetime confirmed_at
+        boolean attended
+    }
+
+    notifications {
+        int id PK
+        int user_id FK
+        varchar title
+        text message
+        boolean is_read
+        datetime created_at
+    }
+
+    password_reset_codes {
+        int id PK
+        int user_id FK
+        varchar code
+        datetime expires_at
+        boolean used
+        datetime created_at
+    }
+
+    users ||--o{ attendance_confirmations : "confirms meal"
+    menus  ||--o{ attendance_confirmations : "confirmed by"
+    menus  ||--o{ menu_items              : "has items"
+    users  ||--o{ notifications           : "receives"
+    users  ||--o{ password_reset_codes    : "has reset code"
+      </pre>
+
+      <div class="legend">
+        <div class="legend-item"><strong style="color:var(--green)">PK</strong> — Primary Key</div>
+        <div class="legend-item"><strong style="color:#d97706">FK</strong> — Foreign Key</div>
+        <div class="legend-item"><span style="font-family:monospace">||--o{</span> — One to Many relationship</div>
+        <div class="legend-item"><span style="font-family:monospace">role ENUM</span> — student / staff / admin</div>
+        <div class="legend-item"><span style="font-family:monospace">meal_type ENUM</span> — breakfast / lunch / dinner</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       TAB 3 — USE CASE DIAGRAM
+  ══════════════════════════════════════════════════ -->
+  <div class="diagram-section" id="sec-usecase">
+    <div class="diagram-title">Use Case Diagram</div>
+    <div class="diagram-desc">Shows what each user role (Student, Staff, Admin) can do within the system.</div>
+
+    <div class="diagram-card" style="padding:1rem">
+      <svg class="uc-svg" viewBox="0 0 960 620" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, system-ui, sans-serif">
+
+        <!-- System Boundary -->
+        <rect x="180" y="20" width="600" height="580" rx="12" ry="12"
+              fill="#f8fafc" stroke="#1a6e3c" stroke-width="2.5" stroke-dasharray="8 4"/>
+        <text x="480" y="48" text-anchor="middle" font-size="15" font-weight="700" fill="#1a6e3c">UEAB Cafeteria Management System</text>
+
+        <!-- ── STUDENT (left actor) ── -->
+        <!-- stick figure -->
+        <circle cx="60" cy="120" r="18" fill="none" stroke="#1d4ed8" stroke-width="2.5"/>
+        <line x1="60" y1="138" x2="60" y2="195" stroke="#1d4ed8" stroke-width="2.5"/>
+        <line x1="60" y1="155" x2="32" y2="175" stroke="#1d4ed8" stroke-width="2.5"/>
+        <line x1="60" y1="155" x2="88" y2="175" stroke="#1d4ed8" stroke-width="2.5"/>
+        <line x1="60" y1="195" x2="38" y2="225" stroke="#1d4ed8" stroke-width="2.5"/>
+        <line x1="60" y1="195" x2="82" y2="225" stroke="#1d4ed8" stroke-width="2.5"/>
+        <text x="60" y="248" text-anchor="middle" font-size="13" font-weight="700" fill="#1d4ed8">Student</text>
+
+        <!-- Student use cases -->
+        <ellipse cx="380" cy="110" rx="110" ry="22" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5"/>
+        <text x="380" y="115" text-anchor="middle" font-size="12" fill="#1e3a5f">Login / Logout</text>
+
+        <ellipse cx="380" cy="175" rx="110" ry="22" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5"/>
+        <text x="380" y="180" text-anchor="middle" font-size="12" fill="#1e3a5f">View Today's Menu</text>
+
+        <ellipse cx="380" cy="240" rx="110" ry="22" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5"/>
+        <text x="380" y="245" text-anchor="middle" font-size="12" fill="#1e3a5f">Confirm / Cancel Attendance</text>
+
+        <ellipse cx="380" cy="305" rx="110" ry="22" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5"/>
+        <text x="380" y="310" text-anchor="middle" font-size="12" fill="#1e3a5f">Browse Upcoming Menus</text>
+
+        <ellipse cx="380" cy="370" rx="110" ry="22" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5"/>
+        <text x="380" y="375" text-anchor="middle" font-size="12" fill="#1e3a5f">View Notifications</text>
+
+        <ellipse cx="380" cy="435" rx="110" ry="22" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5"/>
+        <text x="380" y="440" text-anchor="middle" font-size="12" fill="#1e3a5f">Download Attendance CSV</text>
+
+        <ellipse cx="380" cy="500" rx="110" ry="22" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5"/>
+        <text x="380" y="505" text-anchor="middle" font-size="12" fill="#1e3a5f">Change Password</text>
+
+        <!-- Student → use case lines -->
+        <line x1="78" y1="120" x2="270" y2="110" stroke="#93c5fd" stroke-width="1.5"/>
+        <line x1="80" y1="130" x2="270" y2="175" stroke="#93c5fd" stroke-width="1.5"/>
+        <line x1="80" y1="148" x2="270" y2="240" stroke="#93c5fd" stroke-width="1.5"/>
+        <line x1="80" y1="160" x2="270" y2="305" stroke="#93c5fd" stroke-width="1.5"/>
+        <line x1="80" y1="168" x2="270" y2="370" stroke="#93c5fd" stroke-width="1.5"/>
+        <line x1="80" y1="175" x2="270" y2="435" stroke="#93c5fd" stroke-width="1.5"/>
+        <line x1="80" y1="180" x2="270" y2="500" stroke="#93c5fd" stroke-width="1.5"/>
+
+        <!-- ── STAFF (right actor, upper) ── -->
+        <circle cx="900" cy="200" r="18" fill="none" stroke="#059669" stroke-width="2.5"/>
+        <line x1="900" y1="218" x2="900" y2="275" stroke="#059669" stroke-width="2.5"/>
+        <line x1="900" y1="235" x2="872" y2="255" stroke="#059669" stroke-width="2.5"/>
+        <line x1="900" y1="235" x2="928" y2="255" stroke="#059669" stroke-width="2.5"/>
+        <line x1="900" y1="275" x2="878" y2="305" stroke="#059669" stroke-width="2.5"/>
+        <line x1="900" y1="275" x2="922" y2="305" stroke="#059669" stroke-width="2.5"/>
+        <text x="900" y="328" text-anchor="middle" font-size="13" font-weight="700" fill="#059669">Staff</text>
+
+        <!-- Staff use cases -->
+        <ellipse cx="650" cy="110" rx="110" ry="22" fill="#d1fae5" stroke="#6ee7b7" stroke-width="1.5"/>
+        <text x="650" y="115" text-anchor="middle" font-size="12" fill="#064e3b">View Staff Dashboard</text>
+
+        <ellipse cx="650" cy="175" rx="110" ry="22" fill="#d1fae5" stroke="#6ee7b7" stroke-width="1.5"/>
+        <text x="650" y="180" text-anchor="middle" font-size="12" fill="#064e3b">Add / Edit / Delete Menus</text>
+
+        <ellipse cx="650" cy="240" rx="110" ry="22" fill="#d1fae5" stroke="#6ee7b7" stroke-width="1.5"/>
+        <text x="650" y="245" text-anchor="middle" font-size="12" fill="#064e3b">Weekly Menu Planner</text>
+
+        <ellipse cx="650" cy="305" rx="110" ry="22" fill="#d1fae5" stroke="#6ee7b7" stroke-width="1.5"/>
+        <text x="650" y="310" text-anchor="middle" font-size="12" fill="#064e3b">Mark Student Attended</text>
+
+        <ellipse cx="650" cy="370" rx="110" ry="22" fill="#d1fae5" stroke="#6ee7b7" stroke-width="1.5"/>
+        <text x="650" y="375" text-anchor="middle" font-size="12" fill="#064e3b">Send Notifications</text>
+
+        <ellipse cx="650" cy="435" rx="110" ry="22" fill="#d1fae5" stroke="#6ee7b7" stroke-width="1.5"/>
+        <text x="650" y="440" text-anchor="middle" font-size="12" fill="#064e3b">View Reports &amp; Charts</text>
+
+        <ellipse cx="650" cy="500" rx="110" ry="22" fill="#d1fae5" stroke="#6ee7b7" stroke-width="1.5"/>
+        <text x="650" y="505" text-anchor="middle" font-size="12" fill="#064e3b">Manage Student Accounts</text>
+
+        <!-- Staff lines -->
+        <line x1="882" y1="200" x2="760" y2="110" stroke="#6ee7b7" stroke-width="1.5"/>
+        <line x1="882" y1="210" x2="760" y2="175" stroke="#6ee7b7" stroke-width="1.5"/>
+        <line x1="882" y1="220" x2="760" y2="240" stroke="#6ee7b7" stroke-width="1.5"/>
+        <line x1="882" y1="240" x2="760" y2="305" stroke="#6ee7b7" stroke-width="1.5"/>
+        <line x1="882" y1="255" x2="760" y2="370" stroke="#6ee7b7" stroke-width="1.5"/>
+        <line x1="882" y1="265" x2="760" y2="435" stroke="#6ee7b7" stroke-width="1.5"/>
+        <line x1="882" y1="275" x2="760" y2="500" stroke="#6ee7b7" stroke-width="1.5"/>
+
+        <!-- ── ADMIN (right actor, lower) ── -->
+        <circle cx="900" cy="430" r="18" fill="none" stroke="#dc2626" stroke-width="2.5"/>
+        <line x1="900" y1="448" x2="900" y2="505" stroke="#dc2626" stroke-width="2.5"/>
+        <line x1="900" y1="465" x2="872" y2="485" stroke="#dc2626" stroke-width="2.5"/>
+        <line x1="900" y1="465" x2="928" y2="485" stroke="#dc2626" stroke-width="2.5"/>
+        <line x1="900" y1="505" x2="878" y2="535" stroke="#dc2626" stroke-width="2.5"/>
+        <line x1="900" y1="505" x2="922" y2="535" stroke="#dc2626" stroke-width="2.5"/>
+        <text x="900" y="558" text-anchor="middle" font-size="13" font-weight="700" fill="#dc2626">Admin</text>
+
+        <!-- Admin-only use cases -->
+        <ellipse cx="650" cy="565" rx="120" ry="22" fill="#fee2e2" stroke="#fca5a5" stroke-width="1.5"/>
+        <text x="650" y="570" text-anchor="middle" font-size="12" fill="#7f1d1d">Add Staff / Admin Accounts</text>
+
+        <!-- Admin also includes all staff use cases -->
+        <text x="810" y="395" text-anchor="middle" font-size="10" fill="#dc2626" font-style="italic">«extends Staff»</text>
+
+        <!-- Admin lines -->
+        <line x1="882" y1="430" x2="760" y2="175" stroke="#fca5a5" stroke-width="1.2" stroke-dasharray="5 3"/>
+        <line x1="882" y1="440" x2="760" y2="305" stroke="#fca5a5" stroke-width="1.2" stroke-dasharray="5 3"/>
+        <line x1="882" y1="450" x2="760" y2="435" stroke="#fca5a5" stroke-width="1.2" stroke-dasharray="5 3"/>
+        <line x1="882" y1="462" x2="760" y2="500" stroke="#fca5a5" stroke-width="1.2" stroke-dasharray="5 3"/>
+        <line x1="882" y1="470" x2="770" y2="565" stroke="#fca5a5" stroke-width="1.5"/>
+
+        <!-- Login shared by all -->
+        <text x="300" y="85" font-size="10" fill="#475569" font-style="italic">«shared»</text>
+        <line x1="882" y1="430" x2="490" y2="110" stroke="#fca5a5" stroke-width="1" stroke-dasharray="4 3"/>
+        <line x1="882" y1="430" x2="490" y2="500" stroke="#fca5a5" stroke-width="1" stroke-dasharray="4 3"/>
+
+      </svg>
+
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div> Student use cases</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#10b981"></div> Staff use cases</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div> Admin-only use cases</div>
+        <div class="legend-item"><span style="font-family:monospace;font-size:0.75rem">- - -</span> Admin also performs (extends Staff)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       TAB 4 — DFD
+  ══════════════════════════════════════════════════ -->
+  <div class="diagram-section" id="sec-dfd">
+    <div class="diagram-title">Data Flow Diagram (DFD)</div>
+    <div class="diagram-desc">Shows how data flows between actors, processes, and the database. Level 0 (context) above; Level 1 (decomposed) below.</div>
+
+    <!-- DFD Level 0 -->
+    <div class="diagram-card" style="margin-bottom:1.5rem">
+      <div style="font-size:0.9rem;font-weight:700;margin-bottom:1rem;color:var(--green)">Level 0 — Context Diagram</div>
+      <svg class="dfd-svg" viewBox="0 0 860 280" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, system-ui, sans-serif">
+
+        <!-- External entity: Student -->
+        <rect x="20" y="100" width="130" height="50" rx="4" fill="#dbeafe" stroke="#93c5fd" stroke-width="2"/>
+        <text x="85" y="121" text-anchor="middle" font-size="12" font-weight="700" fill="#1e3a5f">Student</text>
+        <text x="85" y="138" text-anchor="middle" font-size="10" fill="#3b82f6">(External Entity)</text>
+
+        <!-- External entity: Staff/Admin -->
+        <rect x="20" y="190" width="130" height="50" rx="4" fill="#d1fae5" stroke="#6ee7b7" stroke-width="2"/>
+        <text x="85" y="211" text-anchor="middle" font-size="12" font-weight="700" fill="#064e3b">Staff / Admin</text>
+        <text x="85" y="228" text-anchor="middle" font-size="10" fill="#10b981">(External Entity)</text>
+
+        <!-- Central process -->
+        <circle cx="430" cy="140" r="90" fill="#f0fdf4" stroke="#1a6e3c" stroke-width="2.5"/>
+        <text x="430" y="130" text-anchor="middle" font-size="13" font-weight="700" fill="#1a6e3c">Cafeteria</text>
+        <text x="430" y="148" text-anchor="middle" font-size="13" font-weight="700" fill="#1a6e3c">Management</text>
+        <text x="430" y="166" text-anchor="middle" font-size="13" font-weight="700" fill="#1a6e3c">System</text>
+
+        <!-- External entity: Database -->
+        <rect x="710" y="100" width="130" height="50" rx="4" fill="#fef3c7" stroke="#fcd34d" stroke-width="2"/>
+        <text x="775" y="121" text-anchor="middle" font-size="12" font-weight="700" fill="#78350f">MySQL DB</text>
+        <text x="775" y="138" text-anchor="middle" font-size="10" fill="#d97706">(Data Store)</text>
+
+        <!-- External entity: Reports -->
+        <rect x="710" y="190" width="130" height="50" rx="4" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="2"/>
+        <text x="775" y="211" text-anchor="middle" font-size="12" font-weight="700" fill="#4c1d95">Reports</text>
+        <text x="775" y="228" text-anchor="middle" font-size="10" fill="#7c3aed">(Output)</text>
+
+        <!-- Arrows: Student ↔ System -->
+        <line x1="150" y1="118" x2="340" y2="125" stroke="#3b82f6" stroke-width="1.8" marker-end="url(#arr)"/>
+        <text x="240" y="112" text-anchor="middle" font-size="10" fill="#1d4ed8">Login, Confirm Attendance</text>
+        <line x1="340" y1="145" x2="150" y2="152" stroke="#3b82f6" stroke-width="1.8" marker-end="url(#arr)"/>
+        <text x="240" y="168" text-anchor="middle" font-size="10" fill="#1d4ed8">Menus, Notifications, Confirmations</text>
+
+        <!-- Arrows: Staff ↔ System -->
+        <line x1="150" y1="208" x2="340" y2="158" stroke="#10b981" stroke-width="1.8" marker-end="url(#arr)"/>
+        <text x="225" y="195" text-anchor="middle" font-size="10" fill="#065f46">Manage Users, Menus, Notifications</text>
+        <line x1="340" y1="170" x2="150" y2="230" stroke="#10b981" stroke-width="1.8" marker-end="url(#arr)"/>
+
+        <!-- Arrows: System ↔ DB -->
+        <line x1="520" y1="118" x2="710" y2="115" stroke="#d97706" stroke-width="1.8" marker-end="url(#arr)"/>
+        <text x="610" y="110" text-anchor="middle" font-size="10" fill="#92400e">Write (CRUD)</text>
+        <line x1="710" y1="135" x2="520" y2="148" stroke="#d97706" stroke-width="1.8" marker-end="url(#arr)"/>
+        <text x="610" y="156" text-anchor="middle" font-size="10" fill="#92400e">Read (Query)</text>
+
+        <!-- Arrows: System → Reports -->
+        <line x1="510" y1="175" x2="710" y2="205" stroke="#7c3aed" stroke-width="1.8" marker-end="url(#arr)"/>
+        <text x="620" y="200" text-anchor="middle" font-size="10" fill="#4c1d95">Excel / CSV export</text>
+
+        <!-- Arrow marker -->
+        <defs>
+          <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#64748b"/>
+          </marker>
+        </defs>
+      </svg>
+    </div>
+
+    <!-- DFD Level 1 -->
+    <div class="diagram-card">
+      <div style="font-size:0.9rem;font-weight:700;margin-bottom:1rem;color:var(--green)">Level 1 — Decomposed Processes</div>
+      <svg class="dfd-svg" viewBox="0 0 900 480" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, system-ui, sans-serif">
+        <defs>
+          <marker id="a2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#94a3b8"/>
+          </marker>
+        </defs>
+
+        <!-- ── Processes (circles) ── -->
+        <!-- P1: Authentication -->
+        <circle cx="200" cy="80"  r="58" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+        <text x="200" y="73" text-anchor="middle" font-size="11" font-weight="700" fill="#1d4ed8">P1</text>
+        <text x="200" y="88" text-anchor="middle" font-size="10" fill="#1e3a5f">Authentication</text>
+        <text x="200" y="103" text-anchor="middle" font-size="9" fill="#64748b">Login · Logout</text>
+        <text x="200" y="116" text-anchor="middle" font-size="9" fill="#64748b">Change Password</text>
+
+        <!-- P2: Menu Management -->
+        <circle cx="450" cy="80" r="58" fill="#f0fdf4" stroke="#1a6e3c" stroke-width="2"/>
+        <text x="450" y="73" text-anchor="middle" font-size="11" font-weight="700" fill="#1a6e3c">P2</text>
+        <text x="450" y="88" text-anchor="middle" font-size="10" fill="#064e3b">Menu Management</text>
+        <text x="450" y="103" text-anchor="middle" font-size="9" fill="#64748b">Add · Edit · Delete</text>
+        <text x="450" y="116" text-anchor="middle" font-size="9" fill="#64748b">Weekly Planner</text>
+
+        <!-- P3: Attendance -->
+        <circle cx="700" cy="80" r="58" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+        <text x="700" y="73" text-anchor="middle" font-size="11" font-weight="700" fill="#d97706">P3</text>
+        <text x="700" y="88" text-anchor="middle" font-size="10" fill="#78350f">Attendance</text>
+        <text x="700" y="103" text-anchor="middle" font-size="9" fill="#64748b">Confirm · Cancel</text>
+        <text x="700" y="116" text-anchor="middle" font-size="9" fill="#64748b">Mark Attended</text>
+
+        <!-- P4: Notifications -->
+        <circle cx="200" cy="300" r="58" fill="#fef9c3" stroke="#ca8a04" stroke-width="2"/>
+        <text x="200" y="293" text-anchor="middle" font-size="11" font-weight="700" fill="#ca8a04">P4</text>
+        <text x="200" y="308" text-anchor="middle" font-size="10" fill="#78350f">Notifications</text>
+        <text x="200" y="323" text-anchor="middle" font-size="9" fill="#64748b">Broadcast · Receive</text>
+        <text x="200" y="336" text-anchor="middle" font-size="9" fill="#64748b">Mark as Read</text>
+
+        <!-- P5: Reports -->
+        <circle cx="700" cy="300" r="58" fill="#f5f3ff" stroke="#7c3aed" stroke-width="2"/>
+        <text x="700" y="293" text-anchor="middle" font-size="11" font-weight="700" fill="#7c3aed">P5</text>
+        <text x="700" y="308" text-anchor="middle" font-size="10" fill="#4c1d95">Reports</text>
+        <text x="700" y="323" text-anchor="middle" font-size="9" fill="#64748b">Charts · Excel</text>
+        <text x="700" y="336" text-anchor="middle" font-size="9" fill="#64748b">CSV Downloads</text>
+
+        <!-- ── Data Stores ── -->
+        <!-- DS1: users -->
+        <rect x="30" y="195" width="100" height="30" rx="0" fill="white" stroke="#64748b" stroke-width="1.5"/>
+        <line x1="50" y1="195" x2="50" y2="225" stroke="#64748b" stroke-width="1.5"/>
+        <line x1="30" y1="225" x2="130" y2="225" stroke="#64748b" stroke-width="1.5"/>
+        <text x="90" y="213" text-anchor="middle" font-size="10" fill="#334155">DS1: users</text>
+
+        <!-- DS2: menus -->
+        <rect x="370" y="195" width="160" height="30" rx="0" fill="white" stroke="#64748b" stroke-width="1.5"/>
+        <line x1="390" y1="195" x2="390" y2="225" stroke="#64748b" stroke-width="1.5"/>
+        <line x1="370" y1="225" x2="530" y2="225" stroke="#64748b" stroke-width="1.5"/>
+        <text x="460" y="213" text-anchor="middle" font-size="10" fill="#334155">DS2: menus + menu_items</text>
+
+        <!-- DS3: confirmations -->
+        <rect x="590" y="195" width="160" height="30" rx="0" fill="white" stroke="#64748b" stroke-width="1.5"/>
+        <line x1="610" y1="195" x2="610" y2="225" stroke="#64748b" stroke-width="1.5"/>
+        <line x1="590" y1="225" x2="750" y2="225" stroke="#64748b" stroke-width="1.5"/>
+        <text x="670" y="213" text-anchor="middle" font-size="10" fill="#334155">DS3: attendance_confirmations</text>
+
+        <!-- DS4: notifications -->
+        <rect x="120" y="400" width="160" height="30" rx="0" fill="white" stroke="#64748b" stroke-width="1.5"/>
+        <line x1="140" y1="400" x2="140" y2="430" stroke="#64748b" stroke-width="1.5"/>
+        <line x1="120" y1="430" x2="280" y2="430" stroke="#64748b" stroke-width="1.5"/>
+        <text x="200" y="418" text-anchor="middle" font-size="10" fill="#334155">DS4: notifications</text>
+
+        <!-- DS5: reports output -->
+        <rect x="590" y="400" width="160" height="30" rx="0" fill="white" stroke="#64748b" stroke-width="1.5"/>
+        <line x1="610" y1="400" x2="610" y2="430" stroke="#64748b" stroke-width="1.5"/>
+        <line x1="590" y1="430" x2="750" y2="430" stroke="#64748b" stroke-width="1.5"/>
+        <text x="670" y="418" text-anchor="middle" font-size="10" fill="#334155">DS5: Excel / CSV files</text>
+
+        <!-- ── Flows ── -->
+        <!-- P1 ↔ DS1 -->
+        <line x1="155" y1="115" x2="90" y2="195" stroke="#3b82f6" stroke-width="1.5" marker-end="url(#a2)"/>
+        <text x="100" y="168" font-size="9" fill="#3b82f6">verify / update</text>
+        <line x1="80" y1="195" x2="152" y2="118" stroke="#3b82f6" stroke-width="1.5" marker-end="url(#a2)"/>
+        <text x="55" y="155" font-size="9" fill="#3b82f6">user record</text>
+
+        <!-- P2 ↔ DS2 -->
+        <line x1="450" y1="138" x2="450" y2="195" stroke="#1a6e3c" stroke-width="1.5" marker-end="url(#a2)"/>
+        <text x="455" y="175" font-size="9" fill="#1a6e3c">write</text>
+        <line x1="435" y1="195" x2="435" y2="138" stroke="#1a6e3c" stroke-width="1.5" marker-end="url(#a2)"/>
+        <text x="395" y="175" font-size="9" fill="#1a6e3c">read</text>
+
+        <!-- P3 ↔ DS3 -->
+        <line x1="700" y1="138" x2="700" y2="195" stroke="#d97706" stroke-width="1.5" marker-end="url(#a2)"/>
+        <text x="704" y="175" font-size="9" fill="#d97706">write</text>
+        <line x1="685" y1="195" x2="685" y2="138" stroke="#d97706" stroke-width="1.5" marker-end="url(#a2)"/>
+        <text x="640" y="175" font-size="9" fill="#d97706">read</text>
+
+        <!-- P4 ↔ DS4 -->
+        <line x1="200" y1="358" x2="200" y2="400" stroke="#ca8a04" stroke-width="1.5" marker-end="url(#a2)"/>
+        <text x="205" y="385" font-size="9" fill="#ca8a04">write</text>
+        <line x1="185" y1="400" x2="185" y2="358" stroke="#ca8a04" stroke-width="1.5" marker-end="url(#a2)"/>
+        <text x="145" y="385" font-size="9" fill="#ca8a04">read</text>
+
+        <!-- P5 ↔ DS3 -->
+        <line x1="700" y1="358" x2="700" y2="400" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#a2)"/>
+        <text x="704" y="384" font-size="9" fill="#7c3aed">export</text>
+        <line x1="685" y1="255" x2="685" y2="242" stroke="#7c3aed" stroke-width="1.5" marker-end="url(#a2)"/>
+        <text x="635" y="252" font-size="9" fill="#7c3aed">read data</text>
+
+        <!-- P1 → P2 flow -->
+        <line x1="258" y1="80" x2="392" y2="80" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#a2)"/>
+        <text x="325" y="73" text-anchor="middle" font-size="9" fill="#64748b">authenticated session</text>
+
+        <!-- P2 → P3 flow -->
+        <line x1="508" y1="80" x2="642" y2="80" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#a2)"/>
+        <text x="575" y="73" text-anchor="middle" font-size="9" fill="#64748b">menu data</text>
+
+        <!-- P2 → P5 -->
+        <line x1="490" y1="130" x2="660" y2="270" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#a2)"/>
+        <text x="575" y="215" text-anchor="middle" font-size="9" fill="#64748b">menu list</text>
+
+        <!-- P3 → P5 -->
+        <line x1="700" y1="242" x2="700" y2="242" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4 3"/>
+
+        <!-- P4 and DS1 -->
+        <line x1="142" y1="255" x2="100" y2="225" stroke="#ca8a04" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#a2)"/>
+        <text x="100" y="247" font-size="9" fill="#ca8a04">student IDs</text>
+
+      </svg>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       TAB 5 — FLOWCHARTS
+  ══════════════════════════════════════════════════ -->
+  <div class="diagram-section" id="sec-flowcharts">
+    <div class="diagram-title">System Flowcharts</div>
+    <div class="diagram-desc">Step-by-step process flows for the two core workflows: user authentication and meal attendance confirmation.</div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
+
+      <!-- Login Flow -->
+      <div class="diagram-card">
+        <div style="font-size:0.9rem;font-weight:700;margin-bottom:1rem;color:var(--green)"><i class="fas fa-sign-in-alt me-2"></i>Login / Authentication Flow</div>
+        <pre class="mermaid">
+flowchart TD
+    A([User visits /]) --> B{Authenticated?}
+    B -- Yes --> C{Role?}
+    B -- No --> D[/auth/login page]
+    C -- admin or staff --> E[/admin/dashboard]
+    C -- student --> F[/student/dashboard]
+    D --> G[Enter email + password]
+    G --> H[POST /auth/login]
+    H --> I{User found & active?}
+    I -- No --> J[Flash: Invalid credentials]
+    J --> D
+    I -- Yes --> K{must_change\n_password?}
+    K -- Yes --> L[/auth/change-password]
+    L --> M[Submit new password]
+    M --> N{Passes strength\nvalidation?}
+    N -- No --> O[Flash error] --> L
+    N -- Yes --> P[Save new password hash\nSet flag = False]
+    P --> C
+    K -- No --> C
+
+    style A fill:#d1fae5,stroke:#10b981
+    style E fill:#d1fae5,stroke:#10b981
+    style F fill:#dbeafe,stroke:#3b82f6
+    style J fill:#fee2e2,stroke:#ef4444
+    style O fill:#fee2e2,stroke:#ef4444
+        </pre>
+      </div>
+
+      <!-- Attendance Flow -->
+      <div class="diagram-card">
+        <div style="font-size:0.9rem;font-weight:700;margin-bottom:1rem;color:var(--green)"><i class="fas fa-check-circle me-2"></i>Meal Attendance Confirmation Flow</div>
+        <pre class="mermaid">
+flowchart TD
+    A([Student views /student/dashboard]) --> B[Server loads today's menus\n+ student's confirmed IDs]
+    B --> C[Render meal cards\nwith Confirm/Cancel buttons]
+    C --> D[Student clicks button]
+    D --> E[JS: show spinner,\ndisable button]
+    E --> F[fetch POST /student/confirm/menu_id]
+    F --> G{Is meal date\nin the past?}
+    G -- Yes --> H[Return error JSON]
+    H --> I[Show danger toast\nRestore button]
+    G -- No --> J{Already confirmed?}
+    J -- Yes --> K[DELETE confirmation record]
+    K --> L[Return: status=cancelled]
+    J -- No --> M[INSERT confirmation record]
+    M --> N[Return: status=confirmed]
+    L --> O[Update card UI: remove\nborder, badge, toggle button]
+    N --> P[Update card UI: add\ngreen border, badge, toggle button]
+    O --> Q[Show info toast]
+    P --> R[Show success toast]
+
+    style A fill:#d1fae5,stroke:#10b981
+    style H fill:#fee2e2,stroke:#ef4444
+    style I fill:#fee2e2,stroke:#ef4444
+    style R fill:#d1fae5,stroke:#10b981
+        </pre>
+      </div>
+
+    </div>
+
+    <!-- Menu creation flow -->
+    <div class="diagram-card" style="margin-top:1.5rem">
+      <div style="font-size:0.9rem;font-weight:700;margin-bottom:1rem;color:var(--green)"><i class="fas fa-utensils me-2"></i>Menu Creation Flow (Admin / Staff)</div>
+      <pre class="mermaid">
+flowchart LR
+    A([Admin/Staff logs in]) --> B[Navigate to Add Menu\nor Weekly Planner]
+    B --> C{Single menu\nor weekly?}
+    C -- Single --> D[Fill date, meal type,\ndescription, food items]
+    C -- Weekly --> E[Fill 7-day × 3-meal grid\nwith descriptions + items]
+    D --> F[POST /admin/menus/add]
+    E --> G[POST /admin/menus/weekly]
+    F --> H{Date + meal_type\nalready exists?}
+    H -- Yes --> I[Flash: duplicate error\nRedirect back to form]
+    H -- No --> J[INSERT Menu record\nINSERT MenuItem rows]
+    G --> K[For each filled slot:\nCheck for duplicates\nSkip existing, create new]
+    J --> L[Flash success\nRedirect to /admin/menus]
+    K --> L
+
+    style A fill:#d1fae5,stroke:#10b981
+    style L fill:#d1fae5,stroke:#10b981
+    style I fill:#fee2e2,stroke:#ef4444
+      </pre>
+    </div>
+  </div>
+
+</div><!-- /content -->
+
+<footer>
+  <strong>UEAB Cafeteria Attendance &amp; Meal Management System</strong> — INSY 492 Senior Project · Chepchumba Faith · 2026
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'default',
+    themeVariables: {
+      primaryColor:      '#e8f5ee',
+      primaryTextColor:  '#1a6e3c',
+      primaryBorderColor:'#1a6e3c',
+      lineColor:         '#64748b',
+      secondaryColor:    '#dbeafe',
+      tertiaryColor:     '#f5f3ff'
+    },
+    flowchart: { curve: 'basis', padding: 20 },
+    er: { diagramPadding: 30, layoutDirection: 'TB' }
+  });
+
+  function showTab(id) {
+    document.querySelectorAll('.diagram-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('sec-' + id).classList.add('active');
+    document.getElementById('tab-' + id).classList.add('active');
+  }
+</script>
+</body>
+</html>
